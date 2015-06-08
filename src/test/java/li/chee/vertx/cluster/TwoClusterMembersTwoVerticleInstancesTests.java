@@ -15,7 +15,10 @@ import org.vertx.testtools.VertxAssert;
 import java.util.ArrayList;
 import java.util.List;
 
-public class ClusterWatchdogIntegrationTest extends TestVerticle {
+public class TwoClusterMembersTwoVerticleInstancesTests extends TestVerticle {
+
+    // with this number we simulate the different member count of a cluster
+    private final static int SIMULATED_CLUSTER_MEMBERS = 2;
 
     private EventBus eb;
     private Logger log;
@@ -24,6 +27,7 @@ public class ClusterWatchdogIntegrationTest extends TestVerticle {
 
     @Override
     public void start() {
+
         log = container.logger();
         eb = vertx.eventBus();
 
@@ -41,11 +45,12 @@ public class ClusterWatchdogIntegrationTest extends TestVerticle {
 
         JsonObject config = new JsonObject();
         config.putNumber("intervalInSec", 0);
-        List clusterMembersInfo = getMembersMockAmountOfOne();
-        JsonArray clusterMembers = new JsonArray(clusterMembersInfo);
-        //config.putArray("clusterMembers", clusterMembers);
+        JsonArray members = new JsonArray();
+        members.addString("[/192.168.26.35:8981]");
+        members.addString("[/192.168.26.37:8981]");
+        config.putArray("clusterMembers", members);
 
-        container.deployModule(moduleName, config, 2, new AsyncResultHandler<String>() {
+        container.deployModule(moduleName, config, SIMULATED_CLUSTER_MEMBERS, new AsyncResultHandler<String>() {
             public void handle(AsyncResult<String> event) {
                 log.info("success of deployment of  module " + moduleName + ": " + event.result());
                 startTests();
@@ -59,28 +64,17 @@ public class ClusterWatchdogIntegrationTest extends TestVerticle {
     }
 
     @Test
-    public void testSimple() throws Exception {
-
-            vertx.setTimer(5000, new Handler<Long>() {
-                public void handle(Long event) {
-                    log.info("answer size is: " + answers.size());
-                    if (answers.size() == 2) {
-                        VertxAssert.testComplete();
-                    }
+    /**
+     * To simulate two cluster members, we create two instances of the verticle
+     */
+    public void test2ClusterMembers() throws Exception {
+        vertx.setTimer(5000, new Handler<Long>() {
+            public void handle(Long event) {
+                log.info("answer size is: " + answers.size());
+                if (answers.size() == 2) {
+                    VertxAssert.testComplete();
                 }
-            });
-    }
-
-    private List<String> getMembersMockAmountOfOne() {
-        List<String> members = new ArrayList<>();
-        members.add("[/192.168.26.35:8981]");
-        return members;
-    }
-
-    private List<String> getMembersMockAmountOfTwo() {
-        List<String> members = new ArrayList<>();
-        members.add("[/192.168.26.35:8981]");
-        members.add("[/192.168.26.37:8981]");
-        return members;
+            }
+        });
     }
 }

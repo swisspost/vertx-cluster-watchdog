@@ -1,6 +1,5 @@
 package li.chee.vertx.cluster;
 
-import li.chee.vertx.cluster.jmx.ClusterInformation;
 import org.vertx.java.core.Handler;
 import org.vertx.java.core.eventbus.EventBus;
 import org.vertx.java.core.eventbus.Message;
@@ -14,14 +13,16 @@ import java.util.*;
 public class ClusterWatchdog extends Verticle {
 
     private static final String BROADCAST = "clusterhealthcheck";
-    private static final long CHECK_INTERVAL = 1000;
     private static final String RESPONSE_ADDRESS_PREFIX = "responseAddress-";
     private static final String RESPONSE_ADDRESS_KEY = "responseAddress";
 
+    private Logger log;
+    private EventBus eb;
     private String uniqueId;
     private int intervalInSec;
+    private boolean useInjectedClusterMembersCount = true;
     private int clusterMemberCount;
-    private Map<String,List<JsonObject>> healthCheckResponses;
+    protected Map<String,List<JsonObject>> healthCheckResponses;
 
     @Override
     public void start() {
@@ -29,20 +30,27 @@ public class ClusterWatchdog extends Verticle {
         // initalize variables
         healthCheckResponses = new HashMap<>();
 
-        final Logger log = container.logger();
-        log.info("container environment: " + container.env().toString());
-        final EventBus eb = vertx.eventBus();
-
+        log = container.logger();
+        eb = vertx.eventBus();
 
         JsonObject config = container.config();
+
+        // get the interval in seconds to execute the checks
         intervalInSec = config.getInteger("intervalInSec", 0) * 1000;
-        JsonArray clusterMembers = config.getArray("clusterMembers", new JsonArray());
-        clusterMemberCount = clusterMembers.size();
 
+        // get the clusterMembers injected over the config, if available
+        JsonArray clusterMembers = config.getArray("clusterMembers", null);
+        if(clusterMembers == null) {
+            useInjectedClusterMembersCount = false;
+        } else {
+            clusterMemberCount = clusterMembers.size();
+        }
+
+        // create a unique ID per verticle to identify it
         uniqueId = UUID.randomUUID().toString();
-
         log.info("started cluster check verticle: " + uniqueId);
 
+        // the handler for the broadcast event, reads the sender from the event and reply to him
         eb.registerHandler(BROADCAST, new Handler<Message<JsonObject>>() {
             public void handle(Message<JsonObject> event) {
                 String responseAddress = event.body().getString(RESPONSE_ADDRESS_KEY);
@@ -57,6 +65,7 @@ public class ClusterWatchdog extends Verticle {
             }
         });
 
+        // the handler for the reply of the broadcast handler, adds the result to the healthCheckResponses
         eb.registerHandler(RESPONSE_ADDRESS_PREFIX + uniqueId, new Handler<Message<JsonObject>>() {
             public void handle(Message<JsonObject> event) {
                 String senderId = event.body().getString("senderId");
@@ -73,54 +82,53 @@ public class ClusterWatchdog extends Verticle {
 
         if(intervalInSec == 0) {
             // wait until all verticles are up and running
-            vertx.setTimer(2000, new Handler<Long>() {
-                public void handle(Long event) {
-                    JsonObject testpayload = new JsonObject();
-                    testpayload.putString(RESPONSE_ADDRESS_KEY, RESPONSE_ADDRESS_PREFIX + uniqueId);
-                    log.info("send single broadcast healthcheck from: " + uniqueId);
-                    final String timestamp = String.valueOf(System.currentTimeMillis());
-                    testpayload.putString("timestamp", timestamp);
-                    if(clusterMemberCount == 0) {
-                        ClusterInformation clusterInformation = new ClusterInformation();
-                        try {
-                            clusterMemberCount = clusterInformation.getMembers(log).size();
-                        } catch (Exception e) {
-                           log.error("could not read cluster member information");
-                        }
-                    }
-                    eb.publish(BROADCAST, testpayload);
-                    vertx.setTimer(2000, new Handler<Long>() {
-                        public void handle(Long event) {
-                            List<JsonObject> responses =  healthCheckResponses.get(timestamp);
-                            if(responses == null) {
-                                log.error("found no responses for timestamp: " + timestamp);
-                            } else if(clusterMemberCount != responses.size()){
-                                log.error("known cluster members: " + clusterMemberCount + " responses: " + responses.size());
-                            } else {
-                                log.info("all the cluster members answered: " + responses.size());
-                            }
-
-                        }
-                    });
-                }
-            });
+            vertx.setTimer(2000, new ClusterCheckHandler());
         }
 
         if(intervalInSec > 0) {
             // wait until all verticles are up and running
             vertx.setTimer(2000, new Handler<Long>() {
-                public void handle(Long event) {
-                    vertx.setPeriodic(CHECK_INTERVAL, new Handler<Long>() {
-                        public void handle(Long event) {
-                            JsonObject testpayload = new JsonObject();
-                            testpayload.putString(RESPONSE_ADDRESS_KEY, RESPONSE_ADDRESS_PREFIX + uniqueId);
-                            final String timestamp = String.valueOf(System.currentTimeMillis());
-                            testpayload.putString("timestamp", timestamp);
-                            log.info("send interval broadcast healthcheck from: " + uniqueId + " with timestamp: " + timestamp);
-                            eb.publish(BROADCAST, testpayload);
+                @Override public void handle(Long event) {
+                    vertx.setPeriodic(intervalInSec, new ClusterCheckHandler());
+                }
+            });
+        }
+    }
 
-                        }
-                    });
+    class ClusterCheckHandler implements Handler<Long> {
+
+        public void handle(Long event) {
+            JsonObject testpayload = new JsonObject();
+            testpayload.putString(RESPONSE_ADDRESS_KEY, RESPONSE_ADDRESS_PREFIX + uniqueId);
+            log.info("send single broadcast healthcheck from: " + uniqueId);
+            final String timestamp = String.valueOf(System.currentTimeMillis());
+            testpayload.putString("timestamp", timestamp);
+
+            // if the cluster
+            if(! useInjectedClusterMembersCount) {
+                ClusterInformation clusterInformation = new ClusterInformation();
+                try {
+                    clusterMemberCount = clusterInformation.getMembers(log).size();
+                } catch (MoreThanOneHazelcastInstanceException e) {
+                    log.error("got more than one hazelcast instance, we can only handle one hazelcast instance");
+                }
+            }
+
+            // publish the broadcast event which will us get the response of all the registered handlers
+            eb.publish(BROADCAST, testpayload);
+
+            // give the handlers 2sec to respond
+            // log an error message in the case if the response counts don't match the cluster member amount
+            vertx.setTimer(2000, new Handler<Long>() {
+                public void handle(Long event) {
+                    List<JsonObject> responses =  healthCheckResponses.get(timestamp);
+                    if(responses == null) {
+                        log.error("found no responses for timestamp: " + timestamp);
+                    } else if(clusterMemberCount != responses.size()){
+                        log.error("known cluster members: " + clusterMemberCount + " responses: " + responses.size());
+                    } else {
+                        log.info("all the cluster members ("+ responses.size() +") answered: " + responses.toString());
+                    }
                 }
             });
         }

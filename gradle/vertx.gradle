@@ -68,8 +68,10 @@ dependencies {
   provided "io.vertx:vertx-platform:$vertxVersion"
   compile "commons-lang:commons-lang:$commonslangVersion"
   compile "commons-codec:commons-codec:$commonscodecVersion"
+  compile "io.vertx:vertx-hazelcast:$vertxHazelcastVersion"
   runtime "commons-lang:commons-lang:$commonslangVersion"
   runtime "commons-codec:commons-codec:$commonscodecVersion"
+  runtime "io.vertx:vertx-hazelcast:$vertxHazelcastVersion"
   testCompile "redis.clients:jedis:$jedisVersion"
   testCompile "junit:junit:$junitVersion"
   testCompile "org.mockito:mockito-core:$mockitoVersion"
@@ -174,6 +176,7 @@ task runMod(description: 'Run the module') << {
   def args = ['runmod', moduleName]
   def args2 = runModArgs.split("\\s+")
   args.addAll(args2)
+  //args.add("-cluster")
   Starter.main(args as String[])
 }
 
