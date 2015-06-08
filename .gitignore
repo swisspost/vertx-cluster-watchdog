@@ -1,0 +1,16 @@
+target/
+build/
+mods/
+.project
+.classpath
+/.gradle
+/dogs
+.settings
+/bin
+/vertx_classpath.txt
+
+# Intellij
+.idea/
+*.iml
+*.iws
+*.ipr
