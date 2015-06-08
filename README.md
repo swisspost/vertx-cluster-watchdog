@@ -1,2 +1,2 @@
-vertx-cluster-check
-===================
+vertx-cluster-watchdog
+======================

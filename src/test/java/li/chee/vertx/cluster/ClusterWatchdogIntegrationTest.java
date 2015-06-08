@@ -15,7 +15,7 @@ import org.vertx.testtools.VertxAssert;
 import java.util.ArrayList;
 import java.util.List;
 
-public class ClusterCheckIntegrationTest extends TestVerticle {
+public class ClusterWatchdogIntegrationTest extends TestVerticle {
 
     private EventBus eb;
     private Logger log;

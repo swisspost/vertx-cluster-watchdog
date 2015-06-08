@@ -1,7 +1,7 @@
 {
-    "main": "li.chee.vertx.cluster.ClusterCheck",
+    "main": "li.chee.vertx.cluster.ClusterWatchdog",
     "description":"Checks the health status of your cluster",
     "licenses": ["The Apache Software License Version 2.0"],
     "author": "Florian Kammermann",
-    "homepage": "https://github.com/...."
+    "homepage": "https://github.com/postit12/vertx-cluster-watchdog"
 }

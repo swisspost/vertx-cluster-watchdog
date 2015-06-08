@@ -11,7 +11,7 @@ import org.vertx.java.platform.Verticle;
 
 import java.util.*;
 
-public class ClusterCheck extends Verticle {
+public class ClusterWatchdog extends Verticle {
 
     private static final String BROADCAST = "clusterhealthcheck";
     private static final long CHECK_INTERVAL = 1000;
