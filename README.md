@@ -1,11 +1,12 @@
 vertx-cluster-watchdog
 ======================
+
 [ ![Codeship Status for postit12/vertx-cluster-watchdog](https://codeship.com/projects/05fe16e0-f0cf-0132-7113-460dfda79260/status?branch=master)](https://codeship.com/projects/84716)
 
 Checks if all your hazelcast cluster members are receiveing published messages over the bus.
 
-How the check works
--------------------
+How the watchdog works
+----------------------
 
 1. every verticle gets a unique id
 1. The amount of cluster members is red over the hazelcast api `Cluster#getMembers()`
