@@ -8,6 +8,7 @@ import org.vertx.java.core.json.JsonObject;
 import org.vertx.java.core.logging.Logger;
 import org.vertx.java.platform.Verticle;
 
+import java.text.SimpleDateFormat;
 import java.util.*;
 
 public class ClusterWatchdog extends Verticle {
@@ -19,16 +20,14 @@ public class ClusterWatchdog extends Verticle {
     private Logger log;
     private EventBus eb;
     private String uniqueId;
-    private int intervalInSec;
+    private int intervalInMillis;
     private boolean useInjectedClusterMembersCount = true;
     private int clusterMemberCount;
-    protected Map<String,List<JsonObject>> healthCheckResponses;
+    private Map<String,List<JsonObject>> healthCheckResponses;
+    private ClusterWatchdogHttpHandler clusterWatchdogHttpHandler;
 
     @Override
     public void start() {
-
-        // initalize variables
-        healthCheckResponses = new HashMap<>();
 
         log = container.logger();
         eb = vertx.eventBus();
@@ -36,7 +35,8 @@ public class ClusterWatchdog extends Verticle {
         JsonObject config = container.config();
 
         // get the interval in seconds to execute the checks
-        intervalInSec = config.getInteger("intervalInSec", 0) * 1000;
+        intervalInMillis = config.getInteger("intervalInSec", 0) * 1000;
+        log.info("interval in sec is: " + intervalInMillis / 1000);
 
         // get the clusterMembers injected over the config, if available
         JsonArray clusterMembers = config.getArray("clusterMembers", null);
@@ -45,6 +45,12 @@ public class ClusterWatchdog extends Verticle {
         } else {
             clusterMemberCount = clusterMembers.size();
         }
+
+        int resultQueueLength = config.getInteger("resultQueueLength", 10);
+
+        // initalize variables
+        healthCheckResponses = new HashMap<>();
+        clusterWatchdogHttpHandler = new ClusterWatchdogHttpHandler(log, resultQueueLength);
 
         // create a unique ID per verticle to identify it
         uniqueId = UUID.randomUUID().toString();
@@ -80,19 +86,22 @@ public class ClusterWatchdog extends Verticle {
             }
         });
 
-        if(intervalInSec == 0) {
+        if(intervalInMillis == 0) {
             // wait until all verticles are up and running
             vertx.setTimer(2000, new ClusterCheckHandler());
         }
 
-        if(intervalInSec > 0) {
+        if(intervalInMillis > 0) {
             // wait until all verticles are up and running
             vertx.setTimer(2000, new Handler<Long>() {
                 @Override public void handle(Long event) {
-                    vertx.setPeriodic(intervalInSec, new ClusterCheckHandler());
+                    vertx.setPeriodic(intervalInMillis, new ClusterCheckHandler());
                 }
             });
         }
+
+
+        vertx.createHttpServer().requestHandler(clusterWatchdogHttpHandler).listen(7878);
     }
 
     class ClusterCheckHandler implements Handler<Long> {
@@ -110,7 +119,8 @@ public class ClusterWatchdog extends Verticle {
                 try {
                     clusterMemberCount = clusterInformation.getMembers(log).size();
                 } catch (MoreThanOneHazelcastInstanceException e) {
-                    log.error("got more than one hazelcast instance, we can only handle one hazelcast instance");
+                    log.error("got more than one hazelcast instance, we can only handle one hazelcast instance, we abort");
+                    return;
                 }
             }
 
@@ -121,17 +131,31 @@ public class ClusterWatchdog extends Verticle {
             // log an error message in the case if the response counts don't match the cluster member amount
             vertx.setTimer(2000, new Handler<Long>() {
                 public void handle(Long event) {
-                    List<JsonObject> responses =  healthCheckResponses.get(timestamp);
+                    List<JsonObject> responses =  healthCheckResponses.remove(timestamp);
+                    String time = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date());
+                    WatchdogResult watchdogResult = new WatchdogResult();
+                    watchdogResult.broadcastTimestamp = timestamp;
+                    watchdogResult.time = time;
+                    watchdogResult.verticleId = uniqueId;
+                    watchdogResult.clusterMemberCount = clusterMemberCount;
                     if(responses == null) {
                         log.error("found no responses for timestamp: " + timestamp);
+                        watchdogResult.status = ClusterHealthStatus.INCONSISTENT;
+                        watchdogResult.responders = null;
+                        clusterWatchdogHttpHandler.resultQueue.add(watchdogResult);
                     } else if(clusterMemberCount != responses.size()){
+                        watchdogResult.status = ClusterHealthStatus.INCONSISTENT;
+                        watchdogResult.setResponders(responses);
                         log.error("known cluster members: " + clusterMemberCount + " responses: " + responses.size());
+                        clusterWatchdogHttpHandler.resultQueue.add(watchdogResult);
                     } else {
+                        watchdogResult.status = ClusterHealthStatus.CONSISTENT;
+                        watchdogResult.setResponders(responses);
                         log.info("all the cluster members ("+ responses.size() +") answered: " + responses.toString());
+                        clusterWatchdogHttpHandler.resultQueue.add(watchdogResult);
                     }
                 }
             });
         }
     }
-
 }

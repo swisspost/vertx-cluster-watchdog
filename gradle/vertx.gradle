@@ -66,18 +66,14 @@ repositories {
 dependencies {
   provided "io.vertx:vertx-core:$vertxVersion"
   provided "io.vertx:vertx-platform:$vertxVersion"
+  provided "io.vertx:vertx-hazelcast:$vertxHazelcastVersion"
   compile "commons-lang:commons-lang:$commonslangVersion"
-  compile "commons-codec:commons-codec:$commonscodecVersion"
-  compile "io.vertx:vertx-hazelcast:$vertxHazelcastVersion"
+  compile "org.apache.commons:commons-collections4:$commonscollectionsVersion"
+  provided "io.vertx:vertx-hazelcast:$vertxHazelcastVersion"
   runtime "commons-lang:commons-lang:$commonslangVersion"
-  runtime "commons-codec:commons-codec:$commonscodecVersion"
-  runtime "io.vertx:vertx-hazelcast:$vertxHazelcastVersion"
-  testCompile "redis.clients:jedis:$jedisVersion"
+  runtime "org.apache.commons:commons-collections4:$commonscollectionsVersion"
   testCompile "junit:junit:$junitVersion"
-  testCompile "org.mockito:mockito-core:$mockitoVersion"
   testCompile "io.vertx:testtools:$toolsVersion"
-  testCompile 'com.github.kstyrc:embedded-redis:0.6'
-  testRuntime 'com.github.kstyrc:embedded-redis:0.6'
 }
 
 // This sets up the classpath for the script itself
