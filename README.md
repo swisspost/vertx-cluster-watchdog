@@ -41,4 +41,15 @@ Tests
 -----
 
 The tests try to simulate the cluster with multiple instances of the verticle. The amount of cluster members is injected over the config.
+
+Use gradle with alternative repositories
+----------------------------------------
+
+As standard the default maven repositories are set.
+You can overwrite these repositories by setting these properties (`-Pproperty=value`):
+
+* `repository` this is the repository where resources are fetched
+* `uploadRepository` the repository used in `uploadArchives`
+* `repoUsername` the username for uploading archives
+* `repoPassword` the password for uploading archives
     
