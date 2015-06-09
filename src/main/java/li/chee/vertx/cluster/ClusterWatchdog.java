@@ -36,7 +36,7 @@ public class ClusterWatchdog extends Verticle {
         JsonObject config = container.config();
 
         // get the interval in seconds to execute the checks
-        intervalInMillis = config.getInteger("intervalInSec", 0) * 1000;
+        intervalInMillis = config.getInteger("intervalInSec", 30) * 1000;
         log.info("ClusterWatchdog interval in sec is: " + intervalInMillis / 1000);
 
         // get the clusterMembers injected over the config, if available
