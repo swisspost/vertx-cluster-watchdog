@@ -80,7 +80,7 @@ public class ClusterWatchdog extends Verticle {
             public void handle(Message<JsonObject> event) {
                 String senderId = event.body().getString("senderId");
                 String timestamp = event.body().getString("timestamp");
-                log.info("ClusterWatchdog got response, i am: " + uniqueId + ", senderId is: " + senderId);
+                log.debug("ClusterWatchdog got response, i am: " + uniqueId + ", senderId is: " + senderId);
                 if(healthCheckResponses.get(timestamp) == null) {
                     healthCheckResponses.put(timestamp, new ArrayList<JsonObject>());
                 }
@@ -112,7 +112,7 @@ public class ClusterWatchdog extends Verticle {
         public void handle(Long event) {
             JsonObject testpayload = new JsonObject();
             testpayload.putString(RESPONSE_ADDRESS_KEY, RESPONSE_ADDRESS_PREFIX + uniqueId);
-            log.info("ClusterWatchdog send single broadcast healthcheck from: " + uniqueId);
+            log.debug("ClusterWatchdog send single broadcast healthcheck from: " + uniqueId);
             final String timestamp = String.valueOf(System.currentTimeMillis());
             testpayload.putString("timestamp", timestamp);
 
@@ -159,7 +159,7 @@ public class ClusterWatchdog extends Verticle {
                     } else {
                         watchdogResult.status = ClusterHealthStatus.CONSISTENT;
                         watchdogResult.setResponders(responses);
-                        log.info("ClusterWatchdog all the cluster members ("+ responses.size() +") answered: " + responses.toString());
+                        log.debug("ClusterWatchdog all the cluster members ("+ responses.size() +") answered: " + responses.toString());
                         clusterWatchdogHttpHandler.resultQueue.add(watchdogResult);
                     }
                 }
