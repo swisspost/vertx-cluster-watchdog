@@ -26,7 +26,7 @@ public class WatchdogResult {
 
     public JsonObject toJson() {
         JsonObject result = new JsonObject();
-        result.putString("status", status.toString());
+        result.putString("status", String.valueOf(status));
         result.putString("time", time);
         result.putString("broadcastTimestamp", broadcastTimestamp);
         result.putString("verticleId", verticleId);
