@@ -128,6 +128,7 @@ public class ClusterWatchdog extends Verticle {
 
                 if(clusterMemberCount == 0) {
                     log.info("ClusterWatchdog no cluster members found, no watchdog will run");
+                    return;
                 }
             }
 
