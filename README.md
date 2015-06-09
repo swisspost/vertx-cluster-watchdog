@@ -24,8 +24,8 @@ Rest API
 Restrictions
 ------------
 
+* There must be one vertx-cluster-watchdog verticle instance per vertx instance, the watchdog is relying onto the fact that one broadcast message is received by one cluster member
 * the verticle can only handle one hazelcast instance. If there are more than one hazelcast instances, the watchdog will not be run.
-* There can only be one vertx-cluster-watchdog verticle instance per vertx instance, the watchdog is relying onto the fact that one broadcast message is received by one cluster member
 
 Configuration
 -------------
