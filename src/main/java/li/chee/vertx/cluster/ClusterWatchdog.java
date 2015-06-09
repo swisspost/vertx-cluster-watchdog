@@ -125,11 +125,11 @@ public class ClusterWatchdog extends Verticle {
                     log.error("ClusterWatchdog got more than one hazelcast instance, we can only handle one hazelcast instance, we abort");
                     return;
                 }
+            }
 
-                if(clusterMemberCount == 0) {
-                    log.info("ClusterWatchdog no cluster members found, no watchdog will run");
-                    return;
-                }
+            if(clusterMemberCount == 0) {
+                log.info("ClusterWatchdog no cluster members found, no watchdog will run");
+                return;
             }
 
             // publish the broadcast event which will us get the response of all the registered handlers
