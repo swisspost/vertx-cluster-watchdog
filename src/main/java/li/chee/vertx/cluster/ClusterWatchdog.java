@@ -15,6 +15,8 @@ public class ClusterWatchdog extends Verticle {
     private static final String BROADCAST = "clusterhealthcheck";
     private static final String RESPONSE_ADDRESS_PREFIX = "responseAddress-";
     private static final String RESPONSE_ADDRESS_KEY = "responseAddress";
+    private static final int WATCHDOG_START_DELAY = 2000;
+    private static final int TIME_TO_WAIT_FOR_RESPONSE = 2000;
 
     private Logger log;
     private EventBus eb;
@@ -46,7 +48,6 @@ public class ClusterWatchdog extends Verticle {
         }
 
         int resultQueueLength = config.getInteger("resultQueueLength", 100);
-
         int port = config.getInteger("port", 7878);
 
         // initalize variables
@@ -89,12 +90,12 @@ public class ClusterWatchdog extends Verticle {
 
         if(intervalInMillis == 0) {
             // wait until all verticles are up and running
-            vertx.setTimer(2000, new ClusterCheckHandler());
+            vertx.setTimer(WATCHDOG_START_DELAY, new ClusterCheckHandler());
         }
 
         if(intervalInMillis > 0) {
             // wait until all verticles are up and running
-            vertx.setTimer(2000, new Handler<Long>() {
+            vertx.setTimer(WATCHDOG_START_DELAY, new Handler<Long>() {
                 @Override public void handle(Long event) {
                     vertx.setPeriodic(intervalInMillis, new ClusterCheckHandler());
                 }
@@ -129,7 +130,7 @@ public class ClusterWatchdog extends Verticle {
 
             // give the handlers 2sec to respond
             // log an error message in the case if the response counts don't match the cluster member amount
-            vertx.setTimer(2000, new Handler<Long>() {
+            vertx.setTimer(TIME_TO_WAIT_FOR_RESPONSE, new Handler<Long>() {
                 public void handle(Long event) {
                     List<JsonObject> responses =  healthCheckResponses.remove(timestamp);
                     String time = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date());
