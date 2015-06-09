@@ -34,7 +34,7 @@ Configuration
         "port": 7878              // Port we serve http. Defaults to 7878.
         "intervalInSec": 30,      // In which interval the watchdog will be run. Defaults to 30, if the interval is set to 0 the watchdog only run once after deployment. 	                         
         "clusterMembers": -1,     // The amount of the cluster members, defaults to -1, which lets the mod figure out itself the amount of cluster members. 
-        "resultQueueLength: 100"  // The amount of watchdog runs, that should be kept and considered to figure out the cluster state, defaults to 10.
+        "resultQueueLength: 100"  // The amount of watchdog runs, that should be kept and considered to figure out the cluster state, defaults to 100.
     }
     
 Tests
