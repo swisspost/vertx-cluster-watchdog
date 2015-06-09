@@ -45,7 +45,7 @@ public class ClusterWatchdog extends Verticle {
             clusterMemberCount = clusterMemberCountFromConfig;
         }
 
-        int resultQueueLength = config.getInteger("resultQueueLength", 10);
+        int resultQueueLength = config.getInteger("resultQueueLength", 100);
 
         int port = config.getInteger("port", 7878);
 
