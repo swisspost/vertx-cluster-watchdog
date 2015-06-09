@@ -37,7 +37,7 @@ public class ClusterWatchdog extends Verticle {
 
         // get the interval in seconds to execute the checks
         intervalInMillis = config.getInteger("intervalInSec", 0) * 1000;
-        log.info("interval in sec is: " + intervalInMillis / 1000);
+        log.info("ClusterWatchdog interval in sec is: " + intervalInMillis / 1000);
 
         // get the clusterMembers injected over the config, if available
         int clusterMemberCountFromConfig = config.getInteger("clusterMemberCount", -1);
@@ -48,7 +48,9 @@ public class ClusterWatchdog extends Verticle {
         }
 
         int resultQueueLength = config.getInteger("resultQueueLength", 100);
+        log.info("ClusterWatchdog used resultQueueLength: " + resultQueueLength);
         int port = config.getInteger("port", 7878);
+        log.info("ClusterWatchdog used port: " + port);
 
         // initalize variables
         healthCheckResponses = new HashMap<>();
@@ -56,14 +58,14 @@ public class ClusterWatchdog extends Verticle {
 
         // create a unique ID per verticle to identify it
         uniqueId = UUID.randomUUID().toString();
-        log.info("started cluster check verticle: " + uniqueId);
+        log.info("ClusterWatchdog started cluster check verticle: " + uniqueId);
 
         // the handler for the broadcast event, reads the sender from the event and reply to him
         eb.registerHandler(BROADCAST, new Handler<Message<JsonObject>>() {
             public void handle(Message<JsonObject> event) {
                 String responseAddress = event.body().getString(RESPONSE_ADDRESS_KEY);
                 String timestamp = event.body().getString("timestamp");
-                log.info("got broadcast, i am: " + uniqueId + ", responseAddress is: " + responseAddress + " timestamp is: " + timestamp);
+                log.debug("got broadcast, i am: " + uniqueId + ", responseAddress is: " + responseAddress + " timestamp is: " + timestamp);
 
                 // respond to the sender
                 JsonObject responsePayload = new JsonObject();
@@ -78,7 +80,7 @@ public class ClusterWatchdog extends Verticle {
             public void handle(Message<JsonObject> event) {
                 String senderId = event.body().getString("senderId");
                 String timestamp = event.body().getString("timestamp");
-                log.info("got response, i am: " + uniqueId + ", senderId is: " + senderId);
+                log.info("ClusterWatchdog got response, i am: " + uniqueId + ", senderId is: " + senderId);
                 if(healthCheckResponses.get(timestamp) == null) {
                     healthCheckResponses.put(timestamp, new ArrayList<JsonObject>());
                 }
@@ -110,7 +112,7 @@ public class ClusterWatchdog extends Verticle {
         public void handle(Long event) {
             JsonObject testpayload = new JsonObject();
             testpayload.putString(RESPONSE_ADDRESS_KEY, RESPONSE_ADDRESS_PREFIX + uniqueId);
-            log.info("send single broadcast healthcheck from: " + uniqueId);
+            log.info("ClusterWatchdog send single broadcast healthcheck from: " + uniqueId);
             final String timestamp = String.valueOf(System.currentTimeMillis());
             testpayload.putString("timestamp", timestamp);
 
@@ -120,8 +122,12 @@ public class ClusterWatchdog extends Verticle {
                 try {
                     clusterMemberCount = clusterInformation.getMembers(log).size();
                 } catch (MoreThanOneHazelcastInstanceException e) {
-                    log.error("got more than one hazelcast instance, we can only handle one hazelcast instance, we abort");
+                    log.error("ClusterWatchdog got more than one hazelcast instance, we can only handle one hazelcast instance, we abort");
                     return;
+                }
+
+                if(clusterMemberCount == 0) {
+                    log.info("ClusterWatchdog no cluster members found, no watchdog will run");
                 }
             }
 
@@ -140,19 +146,19 @@ public class ClusterWatchdog extends Verticle {
                     watchdogResult.verticleId = uniqueId;
                     watchdogResult.clusterMemberCount = clusterMemberCount;
                     if(responses == null) {
-                        log.error("found no responses for timestamp: " + timestamp);
+                        log.error("ClusterWatchdog found no responses for timestamp: " + timestamp);
                         watchdogResult.status = ClusterHealthStatus.INCONSISTENT;
                         watchdogResult.responders = null;
                         clusterWatchdogHttpHandler.resultQueue.add(watchdogResult);
                     } else if(clusterMemberCount != responses.size()){
                         watchdogResult.status = ClusterHealthStatus.INCONSISTENT;
                         watchdogResult.setResponders(responses);
-                        log.error("known cluster members: " + clusterMemberCount + " responses: " + responses.size());
+                        log.error("ClusterWatchdog known cluster members: " + clusterMemberCount + " responses: " + responses.size());
                         clusterWatchdogHttpHandler.resultQueue.add(watchdogResult);
                     } else {
                         watchdogResult.status = ClusterHealthStatus.CONSISTENT;
                         watchdogResult.setResponders(responses);
-                        log.info("all the cluster members ("+ responses.size() +") answered: " + responses.toString());
+                        log.info("ClusterWatchdog all the cluster members ("+ responses.size() +") answered: " + responses.toString());
                         clusterWatchdogHttpHandler.resultQueue.add(watchdogResult);
                     }
                 }

@@ -18,18 +18,18 @@ public class ClusterInformation {
         // get the hazelcast instances
         Set<HazelcastInstance> allHazelcastInstances = Hazelcast.getAllHazelcastInstances();
         if(allHazelcastInstances == null || allHazelcastInstances.size() == 0) {
-            log.info("no hazelcast instances found");
+            log.error("ClusterWatchdog no hazelcast instances found");
             return new HashSet<>();
         }
 
         if(allHazelcastInstances.size() > 1) {
-            log.info("more than one hazelcast instances found: " + allHazelcastInstances.size());
+            log.error("ClusterWatchdog more than one hazelcast instances found: " + allHazelcastInstances.size());
             throw new MoreThanOneHazelcastInstanceException();
         }
 
-        log.info("found exactly one hazelcast instance, we can go on");
+        log.debug("ClusterWatchdog found exactly one hazelcast instance, we can go on");
         Set<Member> members = allHazelcastInstances.iterator().next().getCluster().getMembers();
-        log.info("found the following members in the hazelcast instance: " + members);
+        log.debug("ClusterWatchdog found the following members in the hazelcast instance: " + members);
 
         return members;
     }

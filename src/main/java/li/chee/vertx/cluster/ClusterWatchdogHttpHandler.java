@@ -48,6 +48,11 @@ public class ClusterWatchdogHttpHandler implements Handler<HttpServerRequest> {
                         status = ClusterHealthStatus.INCONSISTENT;
                     }
                 }
+
+                if(resultQueue.isEmpty()) {
+                    status = ClusterHealthStatus.NO_RESULT;
+                }
+
                 JsonObject result = new JsonObject();
                 result.putString("status", status.toString());
 
@@ -60,7 +65,7 @@ public class ClusterWatchdogHttpHandler implements Handler<HttpServerRequest> {
             }
         });
 
-        log.info("created the ClusterWatchdogHttpHandler");
+        log.info("ClusterWatchdog created the ClusterWatchdogHttpHandler");
     }
 
     @Override

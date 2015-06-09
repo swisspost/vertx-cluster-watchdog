@@ -5,5 +5,5 @@ package li.chee.vertx.cluster;
  */
 public enum ClusterHealthStatus {
 
-    CONSISTENT, INCONSISTENT;
+    CONSISTENT, INCONSISTENT, NO_RESULT;
 }
