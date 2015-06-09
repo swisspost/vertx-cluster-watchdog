@@ -3,7 +3,6 @@ package li.chee.vertx.cluster;
 import org.vertx.java.core.Handler;
 import org.vertx.java.core.eventbus.EventBus;
 import org.vertx.java.core.eventbus.Message;
-import org.vertx.java.core.json.JsonArray;
 import org.vertx.java.core.json.JsonObject;
 import org.vertx.java.core.logging.Logger;
 import org.vertx.java.platform.Verticle;
@@ -39,14 +38,16 @@ public class ClusterWatchdog extends Verticle {
         log.info("interval in sec is: " + intervalInMillis / 1000);
 
         // get the clusterMembers injected over the config, if available
-        JsonArray clusterMembers = config.getArray("clusterMembers", null);
-        if(clusterMembers == null) {
+        int clusterMemberCountFromConfig = config.getInteger("clusterMemberCount", -1);
+        if(clusterMemberCountFromConfig == -1) {
             useInjectedClusterMembersCount = false;
         } else {
-            clusterMemberCount = clusterMembers.size();
+            clusterMemberCount = clusterMemberCountFromConfig;
         }
 
         int resultQueueLength = config.getInteger("resultQueueLength", 10);
+
+        int port = config.getInteger("port", 7878);
 
         // initalize variables
         healthCheckResponses = new HashMap<>();
@@ -100,7 +101,7 @@ public class ClusterWatchdog extends Verticle {
             });
         }
 
-        vertx.createHttpServer().requestHandler(clusterWatchdogHttpHandler).listen(7878);
+        vertx.createHttpServer().requestHandler(clusterWatchdogHttpHandler).listen(port);
     }
 
     class ClusterCheckHandler implements Handler<Long> {

@@ -9,7 +9,6 @@ import org.vertx.java.core.eventbus.EventBus;
 import org.vertx.java.core.eventbus.Message;
 import org.vertx.java.core.http.HttpClient;
 import org.vertx.java.core.http.HttpClientResponse;
-import org.vertx.java.core.json.JsonArray;
 import org.vertx.java.core.json.JsonObject;
 import org.vertx.java.core.logging.Logger;
 import org.vertx.testtools.TestVerticle;
@@ -48,10 +47,7 @@ public class TwoClusterMembersTwoVerticleInstancesTests extends TestVerticle {
 
         JsonObject config = new JsonObject();
         config.putNumber("intervalInSec", 0);
-        JsonArray members = new JsonArray();
-        members.addString("[/192.168.26.35:8981]");
-        members.addString("[/192.168.26.37:8981]");
-        config.putArray("clusterMembers", members);
+        config.putNumber("clusterMemberCount", 2);
 
         container.deployModule(moduleName, config, SIMULATED_CLUSTER_MEMBERS, new AsyncResultHandler<String>() {
             public void handle(AsyncResult<String> event) {
