@@ -13,8 +13,9 @@ How the watchdog works
 1. a message is published to the broadcast address, the address to reply to is in the payload with a timestamp
 1. the receivers of the broadcast message are sending a message back to the sender of the broadcast address, with the timestamp and its unique id
 1. the receivers of the point to point message are counting the received messages with the same timestamp
-1. the result of each member is sent to the other members to have consistency in the results over the cluster
-1. if the members of the cluster are equal to the amount of the point to point senders, the cluster is considered as **CONSISTENT**, otherwise the cluster is considered as **INCONSISTENT**
+1. the result of each member is sent to the other members to have consensus
+1. every member has a `CircularFifoQueue` where he stores the result of himself and the received results, the length can be configured
+1. if the watchdog is asked for consistency over `http://host:port/clusterStatus`, the `CircularFifoQueue` will be consulted, if there is one inconsistent entry, the cluster will be considered as **INCONSISTENT** if every entry is consistent, the cluster will be considered as **CONSISTENT** 
 
 Rest API
 --------
