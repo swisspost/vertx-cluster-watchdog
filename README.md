@@ -9,7 +9,7 @@ How the watchdog works
 ----------------------
 
 1. every verticle gets a unique id
-1. The amount of cluster members is red over the hazelcast api `Cluster#getMembers()`
+1. The amount of cluster members is read over the hazelcast api `Cluster#getMembers()`
 1. a message is published to the broadcast address, the address to reply to is in the payload with a timestamp
 1. the receivers of the broadcast message are sending a message back to the sender of the broadcast address, with the timestamp and its unique id
 1. the receivers of the point to point message are counting the received messages with the same timestamp and distinct sender
@@ -24,20 +24,20 @@ Rest API
 Restrictions
 ------------
 
-* There can be only one vertx-cluster-watchdog verticle instance per vertx instance, the watchdog is relying onto the fact that one broadcast message is received by one cluster member
+* There can only be one vertx-cluster-watchdog verticle instance per vertx instance, the watchdog is relying onto the fact that one broadcast message is received by one cluster member
 
 Configuration
 -------------
 
     {
-        "port": 7878              // Port we listen to. Defaults to 7878.
+        "port": 7878              // Port we serve http. Defaults to 7878.
         "intervalInSec": 0,       // In which interval the watchdog will be run. Defaults to 0, which lets the watchdog only run once after deployment. 	                         
-        "clusterMembers": -1,     // The amount of the cluster members, defaults to -1, which lets the mod figure out itself the amount of cluster members 
-        "resultQueueLength: 10"   // The amount of watchdog runs, that should be kept and considered to figure out the cluster state, defaults to 10
+        "clusterMembers": -1,     // The amount of the cluster members, defaults to -1, which lets the mod figure out itself the amount of cluster members. 
+        "resultQueueLength: 10"   // The amount of watchdog runs, that should be kept and considered to figure out the cluster state, defaults to 10.
     }
     
 Tests
 -----
 
-The tests try to simulate the cluster, which multiple instances of the verticle. The amount of cluster members is injected over the config.
+The tests try to simulate the cluster with multiple instances of the verticle. The amount of cluster members is injected over the config.
     
