@@ -5,6 +5,7 @@ import org.junit.Test;
 import org.vertx.java.core.AsyncResult;
 import org.vertx.java.core.AsyncResultHandler;
 import org.vertx.java.core.Handler;
+import org.vertx.java.core.buffer.Buffer;
 import org.vertx.java.core.eventbus.EventBus;
 import org.vertx.java.core.eventbus.Message;
 import org.vertx.java.core.http.HttpClient;
@@ -69,14 +70,25 @@ public class TwoClusterMembersTwoVerticleInstancesTests extends TestVerticle {
     public void test2ClusterMembers() throws Exception {
         vertx.setTimer(5000, new Handler<Long>() {
             public void handle(Long event) {
-                HttpClient httpClient = vertx.createHttpClient().setHost("localhost").setPort(7878);
-                httpClient.getNow("clusterStatus", new Handler<HttpClientResponse>() {
+                final HttpClient httpClient = vertx.createHttpClient().setHost("localhost").setPort(7878);
 
+                httpClient.getNow("clusterWatchdogStats", new Handler<HttpClientResponse>() {
                     @Override
                     public void handle(HttpClientResponse httpClientResponse) {
-                        log.info("response status message: " + httpClientResponse.statusMessage());
-                        Assert.assertEquals(ClusterHealthStatus.CONSISTENT.toString(), httpClientResponse.statusMessage());
-                        VertxAssert.testComplete();
+                        httpClientResponse.bodyHandler(new Handler<Buffer>() {
+                            @Override public void handle(Buffer buffer) {
+                                log.info("cluster watchdog stats:\n" + buffer.toString());
+                                httpClient.getNow("clusterStatus", new Handler<HttpClientResponse>() {
+                                    @Override
+                                    public void handle(HttpClientResponse httpClientResponse) {
+                                        log.info("response status message: " + httpClientResponse.statusMessage());
+                                        Assert.assertEquals(ClusterHealthStatus.CONSISTENT.toString(), httpClientResponse.statusMessage());
+                                        VertxAssert.testComplete();
+                                    }
+                                });
+
+                            }
+                        });
                     }
                 });
             }

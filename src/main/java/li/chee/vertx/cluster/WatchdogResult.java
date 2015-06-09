@@ -40,4 +40,24 @@ public class WatchdogResult {
         return result;
     }
 
+    public static WatchdogResult fromJson(JsonObject watchdogJsonObj) {
+        WatchdogResult watchdogResult = new WatchdogResult();
+        try {
+            watchdogResult.status = ClusterHealthStatus.valueOf(watchdogJsonObj.getString("status"));
+        } catch(Exception e) { /* let the status be null */ }
+
+        watchdogResult.time = watchdogJsonObj.getString("time");
+        watchdogResult.broadcastTimestamp = watchdogJsonObj.getString("broadcastTimestamp");
+        watchdogResult.verticleId = watchdogJsonObj.getString("verticleId");
+        try {
+            watchdogResult.clusterMemberCount = watchdogJsonObj.getNumber("clusterMemberCount").intValue();
+        } catch(Exception e) { /* let the clusterMemberCount be null */ }
+        List<String> responders = new ArrayList<>();
+        try {
+            watchdogResult.responders = watchdogJsonObj.getArray("responders").toList();
+        } catch(Exception e) { /* let the clusterMemberCount be null */ }
+        return watchdogResult;
+
+    }
+
 }

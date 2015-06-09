@@ -15,6 +15,8 @@ public class ClusterWatchdog extends Verticle {
     private static final String BROADCAST = "clusterhealthcheck";
     private static final String RESPONSE_ADDRESS_PREFIX = "responseAddress-";
     private static final String RESPONSE_ADDRESS_KEY = "responseAddress";
+    private static final String RESULT_ADDRESS_PREFIX = "resultAddress-";
+
     private static final int WATCHDOG_START_DELAY = 2000;
     private static final int TIME_TO_WAIT_FOR_RESPONSE = 2000;
 
@@ -90,6 +92,13 @@ public class ClusterWatchdog extends Verticle {
             }
         });
 
+        // the handler to add the result from the other members
+        eb.registerHandler(RESULT_ADDRESS_PREFIX + uniqueId, new Handler<Message<JsonObject>>() {
+            public void handle(Message<JsonObject> watchdogResultJsonObj) {
+                clusterWatchdogHttpHandler.resultQueue.add(WatchdogResult.fromJson(watchdogResultJsonObj.body()));
+            }
+        });
+
         if(intervalInMillis == 0) {
             // wait until all verticles are up and running
             vertx.setTimer(WATCHDOG_START_DELAY, new ClusterCheckHandler());
@@ -156,14 +165,28 @@ public class ClusterWatchdog extends Verticle {
                         watchdogResult.setResponders(responses);
                         log.error("ClusterWatchdog known cluster members: " + clusterMemberCount + " responses: " + responses.size());
                         clusterWatchdogHttpHandler.resultQueue.add(watchdogResult);
+                        // send the result to the other members to have consistency over the cluster in the results
+                        sendResultToOtherMembers(watchdogResult);
                     } else {
                         watchdogResult.status = ClusterHealthStatus.CONSISTENT;
                         watchdogResult.setResponders(responses);
-                        log.debug("ClusterWatchdog all the cluster members ("+ responses.size() +") answered: " + responses.toString());
+                        log.debug("ClusterWatchdog all the cluster members (" + responses.size() + ") answered: " + responses.toString());
                         clusterWatchdogHttpHandler.resultQueue.add(watchdogResult);
+                        // send the result to the other members to have consistency over the cluster in the results
+                        sendResultToOtherMembers(watchdogResult);
                     }
                 }
             });
+        }
+
+        private void sendResultToOtherMembers(WatchdogResult watchdogResult) {
+            for(String member : watchdogResult.responders) {
+                // only send it to the other members
+                if(uniqueId.equals(member)) {
+                    continue;
+                }
+                eb.send(RESULT_ADDRESS_PREFIX+member, watchdogResult.toJson());
+            }
         }
     }
 }
