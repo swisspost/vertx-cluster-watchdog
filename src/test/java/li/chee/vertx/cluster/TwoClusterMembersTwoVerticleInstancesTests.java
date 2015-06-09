@@ -1,11 +1,14 @@
 package li.chee.vertx.cluster;
 
+import org.junit.Assert;
 import org.junit.Test;
 import org.vertx.java.core.AsyncResult;
 import org.vertx.java.core.AsyncResultHandler;
 import org.vertx.java.core.Handler;
 import org.vertx.java.core.eventbus.EventBus;
 import org.vertx.java.core.eventbus.Message;
+import org.vertx.java.core.http.HttpClient;
+import org.vertx.java.core.http.HttpClientResponse;
 import org.vertx.java.core.json.JsonArray;
 import org.vertx.java.core.json.JsonObject;
 import org.vertx.java.core.logging.Logger;
@@ -70,10 +73,16 @@ public class TwoClusterMembersTwoVerticleInstancesTests extends TestVerticle {
     public void test2ClusterMembers() throws Exception {
         vertx.setTimer(5000, new Handler<Long>() {
             public void handle(Long event) {
-                log.info("answer size is: " + answers.size());
-                if (answers.size() == 2) {
-                    VertxAssert.testComplete();
-                }
+                HttpClient httpClient = vertx.createHttpClient().setHost("localhost").setPort(7878);
+                httpClient.getNow("clusterStatus", new Handler<HttpClientResponse>() {
+
+                    @Override
+                    public void handle(HttpClientResponse httpClientResponse) {
+                        log.info("response status message: " + httpClientResponse.statusMessage());
+                        Assert.assertEquals(ClusterHealthStatus.CONSISTENT.toString(), httpClientResponse.statusMessage());
+                        VertxAssert.testComplete();
+                    }
+                });
             }
         });
     }

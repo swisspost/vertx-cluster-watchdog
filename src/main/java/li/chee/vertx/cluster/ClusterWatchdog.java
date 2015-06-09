@@ -100,7 +100,6 @@ public class ClusterWatchdog extends Verticle {
             });
         }
 
-
         vertx.createHttpServer().requestHandler(clusterWatchdogHttpHandler).listen(7878);
     }
 

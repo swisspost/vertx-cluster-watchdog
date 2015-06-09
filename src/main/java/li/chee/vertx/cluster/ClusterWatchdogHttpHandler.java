@@ -54,6 +54,7 @@ public class ClusterWatchdogHttpHandler implements Handler<HttpServerRequest> {
                 String body = result.encode();
                 request.response().headers().add("Content-Length", "" + body.length());
                 request.response().headers().add("Content-Type", "application/json; charset=utf-8");
+                request.response().setStatusMessage(status.toString());
                 request.response().setStatusCode(200);
                 request.response().end(body);
             }
