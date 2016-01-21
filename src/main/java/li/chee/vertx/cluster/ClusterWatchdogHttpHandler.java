@@ -11,14 +11,11 @@ import io.vertx.core.logging.Logger;
 
 public class ClusterWatchdogHttpHandler implements Handler<HttpServerRequest> {
 
-    Logger log;
-    Router router = Router.router(Vertx.vertx());
-
+    private Router router;
     protected CircularFifoQueue<WatchdogResult> resultQueue;
 
-    public ClusterWatchdogHttpHandler(final Logger log, final int resultQueueLength) {
-
-        this.log = log;
+    public ClusterWatchdogHttpHandler(Vertx vertx, final Logger log, final int resultQueueLength) {
+        this.router = Router.router(vertx);
         resultQueue = new CircularFifoQueue<>(resultQueueLength);
 
         router.getWithRegex(".*clusterWatchdogStats").handler(ctx -> {

@@ -1,7 +1,6 @@
 package li.chee.vertx.cluster;
 
 import io.vertx.core.AbstractVerticle;
-import io.vertx.core.Context;
 import io.vertx.core.Handler;
 import io.vertx.core.eventbus.EventBus;
 import io.vertx.core.eventbus.Message;
@@ -22,7 +21,7 @@ public class ClusterWatchdog extends AbstractVerticle {
     private static final int WATCHDOG_START_DELAY = 2000;
     private static final int TIME_TO_WAIT_FOR_RESPONSE = 2000;
 
-    private Logger log = LoggerFactory.getLogger(ClusterWatchdog.class);
+    private final Logger log = LoggerFactory.getLogger(ClusterWatchdog.class);
 
     private EventBus eb;
     private String uniqueId;
@@ -57,7 +56,7 @@ public class ClusterWatchdog extends AbstractVerticle {
 
         // initalize variables
         healthCheckResponses = new HashMap<>();
-        clusterWatchdogHttpHandler = new ClusterWatchdogHttpHandler(log, resultQueueLength);
+        clusterWatchdogHttpHandler = new ClusterWatchdogHttpHandler(vertx, log, resultQueueLength);
 
         // create a unique ID per verticle to identify it
         uniqueId = UUID.randomUUID().toString();
@@ -85,7 +84,7 @@ public class ClusterWatchdog extends AbstractVerticle {
                 String timestamp = event.body().getString("timestamp");
                 log.debug("ClusterWatchdog got response, i am: " + uniqueId + ", senderId is: " + senderId);
                 if(healthCheckResponses.get(timestamp) == null) {
-                    healthCheckResponses.put(timestamp, new ArrayList<JsonObject>());
+                    healthCheckResponses.put(timestamp, new ArrayList<>());
                 }
                 JsonObject response = new JsonObject();
                 response.put("senderId", senderId);
@@ -107,11 +106,7 @@ public class ClusterWatchdog extends AbstractVerticle {
 
         if(intervalInMillis > 0) {
             // wait until all verticles are up and running
-            vertx.setTimer(WATCHDOG_START_DELAY, new Handler<Long>() {
-                @Override public void handle(Long event) {
-                    vertx.setPeriodic(intervalInMillis, new ClusterCheckHandler());
-                }
-            });
+            vertx.setTimer(WATCHDOG_START_DELAY, event -> vertx.setPeriodic(intervalInMillis, new ClusterCheckHandler()));
         }
 
         vertx.createHttpServer().requestHandler(clusterWatchdogHttpHandler).listen(port);
@@ -147,35 +142,33 @@ public class ClusterWatchdog extends AbstractVerticle {
 
             // give the handlers 2sec to respond
             // log an error message in the case if the response counts don't match the cluster member amount
-            vertx.setTimer(TIME_TO_WAIT_FOR_RESPONSE, new Handler<Long>() {
-                public void handle(Long event) {
-                    List<JsonObject> responses =  healthCheckResponses.remove(timestamp);
-                    String time = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date());
-                    WatchdogResult watchdogResult = new WatchdogResult();
-                    watchdogResult.broadcastTimestamp = timestamp;
-                    watchdogResult.time = time;
-                    watchdogResult.verticleId = uniqueId;
-                    watchdogResult.clusterMemberCount = clusterMemberCount;
-                    if(responses == null) {
-                        log.error("ClusterWatchdog found no responses for timestamp: " + timestamp);
-                        watchdogResult.status = ClusterHealthStatus.INCONSISTENT;
-                        watchdogResult.responders = null;
-                        clusterWatchdogHttpHandler.resultQueue.add(watchdogResult);
-                    } else if(clusterMemberCount != responses.size()){
-                        watchdogResult.status = ClusterHealthStatus.INCONSISTENT;
-                        watchdogResult.setResponders(responses);
-                        log.error("ClusterWatchdog known cluster members: " + clusterMemberCount + " responses: " + responses.size());
-                        clusterWatchdogHttpHandler.resultQueue.add(watchdogResult);
-                        // send the result to the other members to have consistency over the cluster in the results
-                        sendResultToOtherMembers(watchdogResult);
-                    } else {
-                        watchdogResult.status = ClusterHealthStatus.CONSISTENT;
-                        watchdogResult.setResponders(responses);
-                        log.debug("ClusterWatchdog all the cluster members (" + responses.size() + ") answered: " + responses.toString());
-                        clusterWatchdogHttpHandler.resultQueue.add(watchdogResult);
-                        // send the result to the other members to have consistency over the cluster in the results
-                        sendResultToOtherMembers(watchdogResult);
-                    }
+            vertx.setTimer(TIME_TO_WAIT_FOR_RESPONSE, event1 -> {
+                List<JsonObject> responses =  healthCheckResponses.remove(timestamp);
+                String time = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date());
+                WatchdogResult watchdogResult = new WatchdogResult();
+                watchdogResult.broadcastTimestamp = timestamp;
+                watchdogResult.time = time;
+                watchdogResult.verticleId = uniqueId;
+                watchdogResult.clusterMemberCount = clusterMemberCount;
+                if(responses == null) {
+                    log.error("ClusterWatchdog found no responses for timestamp: " + timestamp);
+                    watchdogResult.status = ClusterHealthStatus.INCONSISTENT;
+                    watchdogResult.responders = null;
+                    clusterWatchdogHttpHandler.resultQueue.add(watchdogResult);
+                } else if(clusterMemberCount != responses.size()){
+                    watchdogResult.status = ClusterHealthStatus.INCONSISTENT;
+                    watchdogResult.setResponders(responses);
+                    log.error("ClusterWatchdog known cluster members: " + clusterMemberCount + " responses: " + responses.size());
+                    clusterWatchdogHttpHandler.resultQueue.add(watchdogResult);
+                    // send the result to the other members to have consistency over the cluster in the results
+                    sendResultToOtherMembers(watchdogResult);
+                } else {
+                    watchdogResult.status = ClusterHealthStatus.CONSISTENT;
+                    watchdogResult.setResponders(responses);
+                    log.debug("ClusterWatchdog all the cluster members (" + responses.size() + ") answered: " + responses.toString());
+                    clusterWatchdogHttpHandler.resultQueue.add(watchdogResult);
+                    // send the result to the other members to have consistency over the cluster in the results
+                    sendResultToOtherMembers(watchdogResult);
                 }
             });
         }

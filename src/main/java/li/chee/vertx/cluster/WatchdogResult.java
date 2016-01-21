@@ -52,7 +52,7 @@ public class WatchdogResult {
         try {
             watchdogResult.clusterMemberCount = watchdogJsonObj.getInteger("clusterMemberCount").intValue();
         } catch(Exception e) { /* let the clusterMemberCount be null */ }
-        List<String> responders = new ArrayList<>();
+
         try {
             watchdogResult.responders = watchdogJsonObj.getJsonArray("responders").getList();
         } catch(Exception e) { /* let the clusterMemberCount be null */ }
