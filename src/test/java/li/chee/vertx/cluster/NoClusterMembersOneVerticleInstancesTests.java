@@ -1,41 +1,40 @@
 package li.chee.vertx.cluster;
 
-import org.junit.Assert;
+import io.vertx.core.DeploymentOptions;
+import io.vertx.core.Handler;
+import io.vertx.core.Vertx;
+import io.vertx.core.eventbus.Message;
+import io.vertx.core.http.HttpClient;
+import io.vertx.core.http.HttpClientOptions;
+import io.vertx.core.json.JsonObject;
+import io.vertx.core.logging.Logger;
+import io.vertx.core.logging.LoggerFactory;
+import io.vertx.ext.unit.Async;
+import io.vertx.ext.unit.TestContext;
+import io.vertx.ext.unit.junit.VertxUnitRunner;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
-import org.vertx.java.core.AsyncResult;
-import org.vertx.java.core.AsyncResultHandler;
-import org.vertx.java.core.Handler;
-import org.vertx.java.core.eventbus.EventBus;
-import org.vertx.java.core.eventbus.Message;
-import org.vertx.java.core.http.HttpClient;
-import org.vertx.java.core.http.HttpClientResponse;
-import org.vertx.java.core.json.JsonObject;
-import org.vertx.java.core.logging.Logger;
-import org.vertx.testtools.TestVerticle;
-import org.vertx.testtools.VertxAssert;
+import org.junit.runner.RunWith;
 
 import java.util.ArrayList;
 import java.util.List;
 
-public class NoClusterMembersOneVerticleInstancesTests extends TestVerticle {
+@RunWith(VertxUnitRunner.class)
+public class NoClusterMembersOneVerticleInstancesTests {
 
     // with this number we simulate the different member count of a cluster
     private final static int SIMULATED_CLUSTER_MEMBERS = 1;
 
-    private EventBus eb;
-    private Logger log;
+    private Vertx vertx;
+    private Logger log = LoggerFactory.getLogger(NoClusterMembersOneVerticleInstancesTests.class);
 
     private List<String> answers = new ArrayList<>();
 
-    @Override
-    public void start() {
-
-        log = container.logger();
-        eb = vertx.eventBus();
-
-        initialize();
-
-        eb.registerHandler("clusterhealthcheck", new Handler<Message<JsonObject>>() {
+    @Before
+    public void before() {
+        vertx = Vertx.vertx();
+        vertx.eventBus().consumer("clusterhealthcheck", new Handler<Message<JsonObject>>() {
             public void handle(Message<JsonObject> event) {
                 final JsonObject body = event.body();
                 answers.add(body.getString("responseAddress"));
@@ -43,43 +42,36 @@ public class NoClusterMembersOneVerticleInstancesTests extends TestVerticle {
             }
         });
 
-        final String moduleName = System.getProperty("vertx.modulename");
-
         JsonObject config = new JsonObject();
-        config.putNumber("intervalInSec", 0);
-        config.putNumber("clusterMemberCount", 0);
+        config.put("intervalInSec", 0);
+        config.put("clusterMemberCount", 0);
 
-        container.deployModule(moduleName, config, SIMULATED_CLUSTER_MEMBERS, new AsyncResultHandler<String>() {
-            public void handle(AsyncResult<String> event) {
-                log.info("success of deployment of  module " + moduleName + ": " + event.result());
-                startTests();
-            }
+        final String moduleName = "li.chee.vertx.cluster.ClusterWatchdog";
+
+        vertx.deployVerticle(moduleName, new DeploymentOptions().setConfig(config).setInstances(SIMULATED_CLUSTER_MEMBERS), event -> {
+            log.info("success of deployment of module " + moduleName + ": " + event.result());
         });
     }
 
-    @Override
-    public void stop() {
-        super.stop();
+    @After
+    public void after(TestContext testContext) {
+        vertx.close(testContext.asyncAssertSuccess());
     }
 
     @Test
     /**
      * To simulate two cluster members, we create two instances of the verticle
      */
-    public void test2ClusterMembers() throws Exception {
-        vertx.setTimer(5000, new Handler<Long>() {
-            public void handle(Long event) {
-                HttpClient httpClient = vertx.createHttpClient().setHost("localhost").setPort(7878);
-                httpClient.getNow("clusterStatus", new Handler<HttpClientResponse>() {
-
-                    @Override
-                    public void handle(HttpClientResponse httpClientResponse) {
-                        log.info("response status message: " + httpClientResponse.statusMessage());
-                        Assert.assertEquals(ClusterHealthStatus.NO_RESULT.toString(), httpClientResponse.statusMessage());
-                        VertxAssert.testComplete();
-                    }
-                });
-            }
+    public void test2ClusterMembers(TestContext testContext) throws Exception {
+        Async async = testContext.async();
+        vertx.setTimer(5000, event -> {
+            HttpClient httpClient = vertx.createHttpClient(new HttpClientOptions().setDefaultHost("localhost").setDefaultPort(7878));
+            httpClient.getNow("/clusterStatus", httpClientResponse -> {
+                log.info("response status message: " + httpClientResponse.statusMessage());
+                testContext.assertEquals(ClusterHealthStatus.NO_RESULT.toString(), httpClientResponse.statusMessage());
+                httpClient.close();
+                async.complete();
+            });
         });
     }
 }

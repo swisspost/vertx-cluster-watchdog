@@ -1,16 +1,18 @@
 package li.chee.vertx.cluster;
 
-import org.vertx.java.core.Handler;
-import org.vertx.java.core.eventbus.EventBus;
-import org.vertx.java.core.eventbus.Message;
-import org.vertx.java.core.json.JsonObject;
-import org.vertx.java.core.logging.Logger;
-import org.vertx.java.platform.Verticle;
+import io.vertx.core.AbstractVerticle;
+import io.vertx.core.Context;
+import io.vertx.core.Handler;
+import io.vertx.core.eventbus.EventBus;
+import io.vertx.core.eventbus.Message;
+import io.vertx.core.json.JsonObject;
+import io.vertx.core.logging.Logger;
+import io.vertx.core.logging.LoggerFactory;
 
 import java.text.SimpleDateFormat;
 import java.util.*;
 
-public class ClusterWatchdog extends Verticle {
+public class ClusterWatchdog extends AbstractVerticle {
 
     private static final String BROADCAST = "clusterhealthcheck";
     private static final String RESPONSE_ADDRESS_PREFIX = "responseAddress-";
@@ -20,7 +22,8 @@ public class ClusterWatchdog extends Verticle {
     private static final int WATCHDOG_START_DELAY = 2000;
     private static final int TIME_TO_WAIT_FOR_RESPONSE = 2000;
 
-    private Logger log;
+    private Logger log = LoggerFactory.getLogger(ClusterWatchdog.class);
+
     private EventBus eb;
     private String uniqueId;
     private int intervalInMillis;
@@ -32,10 +35,8 @@ public class ClusterWatchdog extends Verticle {
     @Override
     public void start() {
 
-        log = container.logger();
         eb = vertx.eventBus();
-
-        JsonObject config = container.config();
+        JsonObject config = config();
 
         // get the interval in seconds to execute the checks
         intervalInMillis = config.getInteger("intervalInSec", 30) * 1000;
@@ -63,7 +64,7 @@ public class ClusterWatchdog extends Verticle {
         log.info("ClusterWatchdog started cluster check verticle: " + uniqueId);
 
         // the handler for the broadcast event, reads the sender from the event and reply to him
-        eb.registerHandler(BROADCAST, new Handler<Message<JsonObject>>() {
+        eb.consumer(BROADCAST, new Handler<Message<JsonObject>>() {
             public void handle(Message<JsonObject> event) {
                 String responseAddress = event.body().getString(RESPONSE_ADDRESS_KEY);
                 String timestamp = event.body().getString("timestamp");
@@ -71,14 +72,14 @@ public class ClusterWatchdog extends Verticle {
 
                 // respond to the sender
                 JsonObject responsePayload = new JsonObject();
-                responsePayload.putString("senderId", uniqueId);
-                responsePayload.putString("timestamp", timestamp);
+                responsePayload.put("senderId", uniqueId);
+                responsePayload.put("timestamp", timestamp);
                 eb.send(responseAddress, responsePayload);
             }
         });
 
         // the handler for the reply of the broadcast handler, adds the result to the healthCheckResponses
-        eb.registerHandler(RESPONSE_ADDRESS_PREFIX + uniqueId, new Handler<Message<JsonObject>>() {
+        eb.consumer(RESPONSE_ADDRESS_PREFIX + uniqueId, new Handler<Message<JsonObject>>() {
             public void handle(Message<JsonObject> event) {
                 String senderId = event.body().getString("senderId");
                 String timestamp = event.body().getString("timestamp");
@@ -87,13 +88,13 @@ public class ClusterWatchdog extends Verticle {
                     healthCheckResponses.put(timestamp, new ArrayList<JsonObject>());
                 }
                 JsonObject response = new JsonObject();
-                response.putString("senderId", senderId);
+                response.put("senderId", senderId);
                 healthCheckResponses.get(timestamp).add(response);
             }
         });
 
         // the handler to add the result from the other members
-        eb.registerHandler(RESULT_ADDRESS_PREFIX + uniqueId, new Handler<Message<JsonObject>>() {
+        eb.consumer(RESULT_ADDRESS_PREFIX + uniqueId, new Handler<Message<JsonObject>>() {
             public void handle(Message<JsonObject> watchdogResultJsonObj) {
                 clusterWatchdogHttpHandler.resultQueue.add(WatchdogResult.fromJson(watchdogResultJsonObj.body()));
             }
@@ -120,10 +121,10 @@ public class ClusterWatchdog extends Verticle {
 
         public void handle(Long event) {
             JsonObject testpayload = new JsonObject();
-            testpayload.putString(RESPONSE_ADDRESS_KEY, RESPONSE_ADDRESS_PREFIX + uniqueId);
+            testpayload.put(RESPONSE_ADDRESS_KEY, RESPONSE_ADDRESS_PREFIX + uniqueId);
             log.debug("ClusterWatchdog send single broadcast healthcheck from: " + uniqueId);
             final String timestamp = String.valueOf(System.currentTimeMillis());
-            testpayload.putString("timestamp", timestamp);
+            testpayload.put("timestamp", timestamp);
 
             // if the cluster
             if(! useInjectedClusterMembersCount) {

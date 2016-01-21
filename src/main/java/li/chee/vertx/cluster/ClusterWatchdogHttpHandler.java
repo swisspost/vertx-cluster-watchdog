@@ -1,68 +1,63 @@
 package li.chee.vertx.cluster;
 
+import io.vertx.core.Vertx;
 import org.apache.commons.collections4.queue.CircularFifoQueue;
-import org.vertx.java.core.Handler;
-import org.vertx.java.core.http.HttpServerRequest;
-import org.vertx.java.core.http.RouteMatcher;
-import org.vertx.java.core.json.JsonArray;
-import org.vertx.java.core.json.JsonObject;
-import org.vertx.java.core.logging.Logger;
+import io.vertx.core.Handler;
+import io.vertx.core.http.HttpServerRequest;
+import io.vertx.ext.web.Router;
+import io.vertx.core.json.JsonArray;
+import io.vertx.core.json.JsonObject;
+import io.vertx.core.logging.Logger;
 
 public class ClusterWatchdogHttpHandler implements Handler<HttpServerRequest> {
 
     Logger log;
+    Router router = Router.router(Vertx.vertx());
 
     protected CircularFifoQueue<WatchdogResult> resultQueue;
-
-    RouteMatcher routeMatcher = new RouteMatcher();
 
     public ClusterWatchdogHttpHandler(final Logger log, final int resultQueueLength) {
 
         this.log = log;
         resultQueue = new CircularFifoQueue<>(resultQueueLength);
 
-        routeMatcher.getWithRegEx(".*clusterWatchdogStats", new Handler<HttpServerRequest>() {
-            public void handle(final HttpServerRequest request) {
+        router.getWithRegex(".*clusterWatchdogStats").handler(ctx -> {
 
-                JsonArray results = new JsonArray();
-                for(WatchdogResult watchdogResult : resultQueue) {
-                    results.add(watchdogResult.toJson());
-                }
-                JsonObject result = new JsonObject();
-                result.putArray("results", results);
-
-                String body = result.encode();
-                request.response().headers().add("Content-Length", "" + body.length());
-                request.response().headers().add("Content-Type", "application/json; charset=utf-8");
-                request.response().setStatusCode(200);
-                request.response().end(body);
+            JsonArray results = new JsonArray();
+            for(WatchdogResult watchdogResult : resultQueue) {
+                results.add(watchdogResult.toJson());
             }
+            JsonObject result = new JsonObject();
+            result.put("results", results);
+
+            String body = result.encode();
+            ctx.response().headers().add("Content-Length", "" + body.length());
+            ctx.response().headers().add("Content-Type", "application/json; charset=utf-8");
+            ctx.response().setStatusCode(200);
+            ctx.response().end(body);
         });
 
-        routeMatcher.getWithRegEx(".*clusterStatus", new Handler<HttpServerRequest>() {
-            public void handle(final HttpServerRequest request) {
-
-                ClusterHealthStatus status = ClusterHealthStatus.CONSISTENT;
-                for(WatchdogResult watchdogResult : resultQueue) {
-                    if(ClusterHealthStatus.INCONSISTENT.equals(watchdogResult.status)) {
-                        status = ClusterHealthStatus.INCONSISTENT;
-                    }
+        router.getWithRegex(".*clusterStatus").handler(ctx -> {
+            ClusterHealthStatus status = ClusterHealthStatus.CONSISTENT;
+            for(WatchdogResult watchdogResult : resultQueue) {
+                if(ClusterHealthStatus.INCONSISTENT.equals(watchdogResult.status)) {
+                    status = ClusterHealthStatus.INCONSISTENT;
                 }
-
-                if(resultQueue.isEmpty()) {
-                    status = ClusterHealthStatus.NO_RESULT;
-                }
-
-                JsonObject result = new JsonObject();
-                result.putString("status", status.toString());
-
-                String body = result.encode();
-                request.response().headers().add("Content-Length", "" + body.length());
-                request.response().headers().add("Content-Type", "application/json; charset=utf-8");
-                request.response().setStatusMessage(status.toString());
-                request.response().setStatusCode(200);
-                request.response().end(body);
             }
+
+            if(resultQueue.isEmpty()) {
+                status = ClusterHealthStatus.NO_RESULT;
+            }
+
+            JsonObject result = new JsonObject();
+            result.put("status", status.toString());
+
+            String body = result.encode();
+            ctx.response().headers().add("Content-Length", "" + body.length());
+            ctx.response().headers().add("Content-Type", "application/json; charset=utf-8");
+            ctx.response().setStatusMessage(status.toString());
+            ctx.response().setStatusCode(200);
+            ctx.response().end(body);
         });
 
         log.info("ClusterWatchdog created the ClusterWatchdogHttpHandler");
@@ -70,6 +65,6 @@ public class ClusterWatchdogHttpHandler implements Handler<HttpServerRequest> {
 
     @Override
     public void handle(HttpServerRequest request) {
-        routeMatcher.handle(request);
+        router.accept(request);
     }
 }

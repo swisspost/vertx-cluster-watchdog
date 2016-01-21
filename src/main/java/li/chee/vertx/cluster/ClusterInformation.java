@@ -3,7 +3,7 @@ package li.chee.vertx.cluster;
 import com.hazelcast.core.Hazelcast;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.Member;
-import org.vertx.java.core.logging.Logger;
+import io.vertx.core.logging.Logger;
 
 import java.util.HashSet;
 import java.util.Set;
