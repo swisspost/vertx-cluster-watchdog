@@ -1,6 +1,7 @@
 package li.chee.vertx.cluster;
 
 import io.vertx.core.AbstractVerticle;
+import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.eventbus.EventBus;
 import io.vertx.core.eventbus.Message;
@@ -32,7 +33,7 @@ public class ClusterWatchdog extends AbstractVerticle {
     private ClusterWatchdogHttpHandler clusterWatchdogHttpHandler;
 
     @Override
-    public void start() {
+    public void start(Future<Void> fut) {
 
         eb = vertx.eventBus();
         JsonObject config = config();
@@ -109,7 +110,13 @@ public class ClusterWatchdog extends AbstractVerticle {
             vertx.setTimer(WATCHDOG_START_DELAY, event -> vertx.setPeriodic(intervalInMillis, new ClusterCheckHandler()));
         }
 
-        vertx.createHttpServer().requestHandler(clusterWatchdogHttpHandler).listen(port);
+        vertx.createHttpServer().requestHandler(clusterWatchdogHttpHandler).listen(port, result -> {
+            if(result.succeeded()){
+                fut.complete();
+            } else {
+                fut.fail(result.cause());
+            }
+        });
     }
 
     class ClusterCheckHandler implements Handler<Long> {
