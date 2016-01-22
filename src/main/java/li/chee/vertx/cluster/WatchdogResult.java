@@ -1,7 +1,7 @@
 package li.chee.vertx.cluster;
 
-import org.vertx.java.core.json.JsonArray;
-import org.vertx.java.core.json.JsonObject;
+import io.vertx.core.json.JsonArray;
+import io.vertx.core.json.JsonObject;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -26,17 +26,17 @@ public class WatchdogResult {
 
     public JsonObject toJson() {
         JsonObject result = new JsonObject();
-        result.putString("status", String.valueOf(status));
-        result.putString("time", time);
-        result.putString("broadcastTimestamp", broadcastTimestamp);
-        result.putString("verticleId", verticleId);
-        result.putNumber("clusterMemberCount", clusterMemberCount);
+        result.put("status", String.valueOf(status));
+        result.put("time", time);
+        result.put("broadcastTimestamp", broadcastTimestamp);
+        result.put("verticleId", verticleId);
+        result.put("clusterMemberCount", clusterMemberCount);
 
         JsonArray respondersAsArr = new JsonArray();
         for(String responder : responders) {
-            respondersAsArr.addString(responder);
+            respondersAsArr.add(responder);
         }
-        result.putArray("responders", respondersAsArr);
+        result.put("responders", respondersAsArr);
         return result;
     }
 
@@ -50,11 +50,11 @@ public class WatchdogResult {
         watchdogResult.broadcastTimestamp = watchdogJsonObj.getString("broadcastTimestamp");
         watchdogResult.verticleId = watchdogJsonObj.getString("verticleId");
         try {
-            watchdogResult.clusterMemberCount = watchdogJsonObj.getNumber("clusterMemberCount").intValue();
+            watchdogResult.clusterMemberCount = watchdogJsonObj.getInteger("clusterMemberCount").intValue();
         } catch(Exception e) { /* let the clusterMemberCount be null */ }
-        List<String> responders = new ArrayList<>();
+
         try {
-            watchdogResult.responders = watchdogJsonObj.getArray("responders").toList();
+            watchdogResult.responders = watchdogJsonObj.getJsonArray("responders").getList();
         } catch(Exception e) { /* let the clusterMemberCount be null */ }
         return watchdogResult;
 

@@ -60,11 +60,10 @@ dependencies {
 }
 
 test {
-  /* Configure which tests are included
-  include 'org/foo/**'
-  exclude 'org/boo/**'
-  */
-
+  testLogging {
+    events "passed", "skipped", "failed"
+    exceptionFormat = "full"
+  }
 }
 
 /*
