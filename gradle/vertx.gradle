@@ -1,4 +1,4 @@
-import org.vertx.java.platform.impl.cli.Starter
+import io.vertx.core.Starter
 
 /*
  * Copyright 2012 the original author or authors.
@@ -35,8 +35,8 @@ archivesBaseName = modname
 
 defaultTasks = ['assemble']
 
-sourceCompatibility = '1.7'
-targetCompatibility = '1.7'
+sourceCompatibility = '1.8'
+targetCompatibility = '1.8'
 
 project.ext.moduleName = "$modowner~$modname~$version"
 
@@ -65,7 +65,7 @@ repositories {
 
 dependencies {
   provided "io.vertx:vertx-core:$vertxVersion"
-  provided "io.vertx:vertx-platform:$vertxVersion"
+  provided "io.vertx:vertx-web:$vertxVersion"
   provided "io.vertx:vertx-hazelcast:$vertxHazelcastVersion"
   compile "commons-lang:commons-lang:$commonslangVersion"
   compile "org.apache.commons:commons-collections4:$commonscollectionsVersion"
@@ -73,7 +73,7 @@ dependencies {
   runtime "commons-lang:commons-lang:$commonslangVersion"
   runtime "org.apache.commons:commons-collections4:$commonscollectionsVersion"
   testCompile "junit:junit:$junitVersion"
-  testCompile "io.vertx:testtools:$toolsVersion"
+  testCompile "io.vertx:vertx-unit:$vertxVersion"
 }
 
 // This sets up the classpath for the script itself
@@ -99,7 +99,7 @@ buildscript {
 
   dependencies {
     classpath "io.vertx:vertx-core:$vertxVersion"
-    classpath "io.vertx:vertx-platform:$vertxVersion"
+    classpath "io.vertx:vertx-web:$vertxVersion"
     classpath "io.vertx:vertx-hazelcast:$vertxVersion"
 
     // Extra classpath for Vert.x
