@@ -5,6 +5,7 @@ import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.eventbus.EventBus;
 import io.vertx.core.eventbus.Message;
+import io.vertx.core.http.HttpServerOptions;
 import io.vertx.core.json.JsonObject;
 import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
@@ -110,7 +111,10 @@ public class ClusterWatchdog extends AbstractVerticle {
             vertx.setTimer(WATCHDOG_START_DELAY, event -> vertx.setPeriodic(intervalInMillis, new ClusterCheckHandler()));
         }
 
-        vertx.createHttpServer().requestHandler(clusterWatchdogHttpHandler).listen(port, result -> {
+        // in Vert.x 2x 100-continues was activated per default, in vert.x 3x it is off per default.
+        HttpServerOptions options = new HttpServerOptions().setHandle100ContinueAutomatically(true);
+
+        vertx.createHttpServer(options).requestHandler(clusterWatchdogHttpHandler).listen(port, result -> {
             if(result.succeeded()){
                 fut.complete();
             } else {
