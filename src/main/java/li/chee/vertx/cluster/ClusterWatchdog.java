@@ -116,8 +116,10 @@ public class ClusterWatchdog extends AbstractVerticle {
 
         vertx.createHttpServer(options).requestHandler(clusterWatchdogHttpHandler).listen(port, result -> {
             if(result.succeeded()){
+                log.info("HttpServer successfully started on port " + port);
                 fut.complete();
             } else {
+                log.error("HttpServer failed to start cause: " + result.cause());
                 fut.fail(result.cause());
             }
         });
