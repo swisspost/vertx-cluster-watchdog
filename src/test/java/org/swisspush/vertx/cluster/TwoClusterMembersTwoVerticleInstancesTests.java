@@ -1,4 +1,4 @@
-package org.swisspush.cluster;
+package org.swisspush.vertx.cluster;
 
 import io.vertx.core.DeploymentOptions;
 import io.vertx.core.Handler;
@@ -41,7 +41,7 @@ public class TwoClusterMembersTwoVerticleInstancesTests {
             }
         });
 
-        final String moduleName = "org.swisspush.cluster.ClusterWatchdog";
+        final String moduleName = "org.swisspush.vertx.cluster.ClusterWatchdog";
 
         JsonObject config = new JsonObject();
         config.put("intervalInSec", 0);

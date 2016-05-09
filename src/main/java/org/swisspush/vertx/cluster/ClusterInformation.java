@@ -1,4 +1,4 @@
-package org.swisspush.cluster;
+package org.swisspush.vertx.cluster;
 
 import com.hazelcast.core.Hazelcast;
 import com.hazelcast.core.HazelcastInstance;
@@ -9,7 +9,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 /**
- * Created by kammermannf on 02.06.2015.
+ * @author https://github.com/floriankammermann [Florian Kammermann] on 02.06.2015
  */
 public class ClusterInformation {
 

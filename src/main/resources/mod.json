@@ -1,5 +1,5 @@
 {
-    "main": "org.swisspush.cluster.ClusterWatchdog",
+    "main": "org.swisspush.vertx.cluster.ClusterWatchdog",
     "description":"Checks the health status of the hazelcast cluster",
     "licenses": ["The Apache Software License Version 2.0"],
     "author": "Florian Kammermann",

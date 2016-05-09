@@ -1,4 +1,4 @@
-package org.swisspush.cluster;
+package org.swisspush.vertx.cluster;
 
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
@@ -7,7 +7,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Created by kammermannf on 09.06.2015.
+ * @author https://github.com/floriankammermann [Florian Kammermann] on 09.06.2015
  */
 public class WatchdogResult {
 
