@@ -1,4 +1,4 @@
-package li.chee.vertx.cluster;
+package org.swisspush.cluster;
 
 /**
  * Created by kammermannf on 09.06.2015.

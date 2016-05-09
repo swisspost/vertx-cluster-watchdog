@@ -1,4 +1,4 @@
-package li.chee.vertx.cluster;
+package org.swisspush.cluster;
 
 import io.vertx.core.Vertx;
 import org.apache.commons.collections4.queue.CircularFifoQueue;

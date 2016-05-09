@@ -1,4 +1,4 @@
-package li.chee.vertx.cluster;
+package org.swisspush.cluster;
 
 import com.hazelcast.core.Hazelcast;
 import com.hazelcast.core.HazelcastInstance;

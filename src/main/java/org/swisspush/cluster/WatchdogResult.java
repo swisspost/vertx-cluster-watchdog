@@ -1,4 +1,4 @@
-package li.chee.vertx.cluster;
+package org.swisspush.cluster;
 
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;

@@ -1,4 +1,4 @@
-package li.chee.vertx.cluster;
+package org.swisspush.cluster;
 
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.Future;
