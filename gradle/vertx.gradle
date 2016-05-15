@@ -222,7 +222,7 @@ def loadProperties(String sourceFileName) {
   def propFile = new File(sourceFileName)
   if (propFile.canRead()) {
     config.load(new FileInputStream(propFile))
-    for (def property in config) {
+    for (def property in config) {  
       project.ext[property.key] = property.value;
     }
   }
