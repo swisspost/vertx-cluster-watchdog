@@ -114,6 +114,15 @@ sourceSets {
   }
 }
 
+compileJava {
+  options.encoding = "UTF-8"
+}
+
+javadoc {
+  options.encoding = "UTF-8"
+  classpath = configurations.compile + configurations.provided
+}
+
 task copyMod( type:Copy, dependsOn: 'classes', description: 'Assemble the module into the local mods directory' ) {
   into "build/mods/$moduleName"
   from compileJava
@@ -138,12 +147,22 @@ task sourceJar(type: Jar) {
   from sourceSets.main.java
 }
 
-build.dependsOn sourceJar
-
-artifacts {
-  archives sourceJar, modZip
+javadoc {
+  classpath = configurations.compile + configurations.provided
 }
 
+task javadocJar(type: org.gradle.api.tasks.bundling.Jar) {
+  description = 'Builds a javadoc jar artifact suitable for maven deployment.'
+  classifier = 'javadoc'
+  from javadoc.destinationDir
+}
+javadocJar.dependsOn javadoc
+
+build.dependsOn sourceJar, javadocJar
+
+artifacts {
+  archives sourceJar, javadocJar, modZip
+}
 
 test {
   dependsOn copyMod
@@ -222,7 +241,7 @@ def loadProperties(String sourceFileName) {
   def propFile = new File(sourceFileName)
   if (propFile.canRead()) {
     config.load(new FileInputStream(propFile))
-    for (def property in config) {  
+    for (def property in config) {
       project.ext[property.key] = property.value;
     }
   }
