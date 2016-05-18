@@ -48,6 +48,31 @@ install - install any jars produced to the local Maven repository (.m2)
 
  */
 
+buildscript {
+  repositories {
+
+    try {
+      maven { url "$repository" }
+      println 'use custom plugin repository: ' + "$repository"
+    } catch(Exception e) {
+      maven { url "https://plugins.gradle.org/m2/" }
+      println 'use standard plugin repository'
+    }
+    mavenCentral()
+  }
+  dependencies {
+    classpath "com.github.jengelman.gradle.plugins:shadow:1.2.3"
+  }
+}
+
+apply plugin: 'com.github.johnrengelman.shadow'
+
+shadowJar {
+  manifest {
+    attributes 'Main-Class': 'org.swisspush.vertx.cluster.ClusterWatchdogRunner'
+  }
+}
+
 dependencies {
   /*
   Add your module jar dependencies here

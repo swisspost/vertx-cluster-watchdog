@@ -55,7 +55,7 @@ repositories {
 
   try {
     maven { url "$repository" }
-    println 'use custom repository: $repository'
+    println "use custom repository: $repository"
   } catch(Exception e) {
     maven { url 'https://oss.sonatype.org/content/repositories/snapshots' }
     println 'use standard repository'
@@ -64,14 +64,13 @@ repositories {
 }
 
 dependencies {
-  provided "io.vertx:vertx-core:$vertxVersion"
-  provided "io.vertx:vertx-web:$vertxVersion"
-  provided "io.vertx:vertx-hazelcast:$vertxHazelcastVersion"
+  compile "io.vertx:vertx-core:$vertxVersion"
+  compile "io.vertx:vertx-web:$vertxVersion"
+  compile "io.vertx:vertx-hazelcast:$vertxVersion"
   compile "commons-lang:commons-lang:$commonslangVersion"
   compile "org.apache.commons:commons-collections4:$commonscollectionsVersion"
-  provided "io.vertx:vertx-hazelcast:$vertxHazelcastVersion"
-  runtime "commons-lang:commons-lang:$commonslangVersion"
-  runtime "org.apache.commons:commons-collections4:$commonscollectionsVersion"
+  compile "org.slf4j:slf4j-log4j12:$slf4jVersion"
+  compile "log4j:log4j:$log4jVersion"
   testCompile "junit:junit:$junitVersion"
   testCompile "io.vertx:vertx-unit:$vertxVersion"
 }
