@@ -37,6 +37,7 @@ public class ClusterWatchdog extends AbstractVerticle {
 
         eb = vertx.eventBus();
         JsonObject config = config();
+        log.info("started with config: \n" +config.encodePrettily());
 
         // get the interval in seconds to execute the checks
         intervalInMillis = config.getInteger("intervalInSec", 30) * 1000;
@@ -52,8 +53,8 @@ public class ClusterWatchdog extends AbstractVerticle {
 
         int resultQueueLength = config.getInteger("resultQueueLength", 100);
         log.info("ClusterWatchdog used resultQueueLength: " + resultQueueLength);
-        int port = config.getInteger("port", 7878);
-        log.info("ClusterWatchdog used port: " + port);
+        int httport = config.getInteger("http.port", 7878);
+        log.info("ClusterWatchdog used http port: " + httport);
 
         // initalize variables
         healthCheckResponses = new HashMap<>();
@@ -110,7 +111,7 @@ public class ClusterWatchdog extends AbstractVerticle {
             vertx.setTimer(WATCHDOG_START_DELAY, event -> vertx.setPeriodic(intervalInMillis, new ClusterCheckHandler()));
         }
 
-        vertx.createHttpServer().requestHandler(clusterWatchdogHttpHandler).listen(port, result -> {
+        vertx.createHttpServer().requestHandler(clusterWatchdogHttpHandler).listen(httport, result -> {
             if(result.succeeded()){
                 fut.complete();
             } else {
