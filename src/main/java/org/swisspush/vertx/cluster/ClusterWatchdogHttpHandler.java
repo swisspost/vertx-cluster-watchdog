@@ -8,6 +8,7 @@ import io.vertx.ext.web.Router;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import io.vertx.core.logging.Logger;
+import org.apache.commons.lang.ArrayUtils;
 
 public class ClusterWatchdogHttpHandler implements Handler<HttpServerRequest> {
 
@@ -20,8 +21,12 @@ public class ClusterWatchdogHttpHandler implements Handler<HttpServerRequest> {
 
         router.getWithRegex(".*clusterWatchdogStats").handler(ctx -> {
 
+            // revers the result, that the newest is showed first
+            WatchdogResult[] watchdogResults = resultQueue.toArray(new WatchdogResult[resultQueue.size()]);
+            ArrayUtils.reverse(watchdogResults);
+
             JsonArray results = new JsonArray();
-            for(WatchdogResult watchdogResult : resultQueue) {
+            for(WatchdogResult watchdogResult : watchdogResults) {
                 results.add(watchdogResult.toJson());
             }
             JsonObject result = new JsonObject();
