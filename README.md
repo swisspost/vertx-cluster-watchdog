@@ -5,6 +5,17 @@ vertx-cluster-watchdog
 
 Checks if all your hazelcast cluster members are receiveing published messages over the bus.
 
+How to run the watchdog
+-----------------------
+You can run the watchdog standalone to try different cluster settings or deploy it into an existing vertx instance.
+
+1. Standalone:
+   build the fatjar with `gradle shadowJar` 
+   run the jar with `java -jar build/libs/cluster-watchdog-x.x.x-SNAPSHOT-all.jar`
+   You can pass configuration to the fatjar with `-conf conf.json`, check the configuration section for the possible params 
+2. Existing instance:
+   Deploy the module as every other module
+
 How the watchdog works
 ----------------------
 
@@ -33,10 +44,17 @@ Configuration
 -------------
 ```
 {
-    "port": 7878              // Port we serve http. Defaults to 7878.
-    "intervalInSec": 30,      // In which interval the watchdog will be run. Defaults to 30, if the interval is set to 0 the watchdog only run once after deployment.
-    "clusterMembers": -1,     // The amount of the cluster members, defaults to -1, which lets the mod figure out itself the amount of cluster members.
-    "resultQueueLength: 100"  // The amount of watchdog runs, that should be kept and considered to figure out the cluster state, defaults to 100.
+    "http.port": 7878                       // Port we serve http. Defaults to 7878.
+    "cluster.noconf":true                   // pass an empty HazelcastClusterManager instance to the ClusterManager
+    "cluster.host":"192.168.26.3"           // the cluster host passed to the VertxOptions
+    "hazelcast.group.name":"grp"            // the groupname passed to the Hazelcast GroupConfig
+    "hazelcast.group.password":"pw"         // the password passed to the Hazelcast GroupConfig
+    "hazelcast.net.port":8981               // the port passed to Hazelcast NetworkConfig
+    "hazelcast.multicast.group":"224.2.2.3" // the multicast group passed to the Hazelcast MulticastConfig
+    "hazelcast.multicast.port":5559         // the multicast group passed to the Hazelcast MulticastConfig
+    "intervalInSec": 30,                    // In which interval the watchdog will be run. Defaults to 30, if the interval is set to 0 the watchdog only run once after deployment.
+    "clusterMembers": -1,                   // The amount of the cluster members, defaults to -1, which lets the mod figure out itself the amount of cluster members.
+    "resultQueueLength: 100"                // The amount of watchdog runs, that should be kept and considered to figure out the cluster state, defaults to 100.
 }
 ```
     
