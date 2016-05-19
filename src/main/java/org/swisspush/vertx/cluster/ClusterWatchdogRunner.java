@@ -14,7 +14,11 @@ import io.vertx.spi.cluster.hazelcast.HazelcastClusterManager;
 
 import java.io.File;
 import java.io.FileNotFoundException;
-import java.util.Scanner;
+import java.net.Inet6Address;
+import java.net.InetAddress;
+import java.net.NetworkInterface;
+import java.net.SocketException;
+import java.util.*;
 
 /**
  * Created by florian kammermann on 18.05.2016.
@@ -52,13 +56,28 @@ public class ClusterWatchdogRunner {
         DeploymentOptions deploymentOptions = new DeploymentOptions();
         deploymentOptions.setConfig(conf);
 
-        VertxOptions options = new VertxOptions();
+        VertxOptions options;
         if(null == conf.getBoolean("cluster.noconf") || false == conf.getBoolean("cluster.noconf")) {
             log.info("configure cluster");
             ClusterManager mgr = new HazelcastClusterManager(getClusterConfig(conf));
             options = new VertxOptions().setClusterManager(mgr);
         } else {
             options = new VertxOptions().setClusterManager(new HazelcastClusterManager());
+        }
+
+        String defaultAddressNotLoopback = getDefaultAddressNotLoopback();
+        InetAddress loopbackAddress = InetAddress.getLoopbackAddress();
+        if(null != conf.getString("cluster.host")) {
+            log.info("use cluster host from config: " + conf.getString("cluster.host"));
+            options.setClusterHost(conf.getString("cluster.host"));
+        } else if(null != defaultAddressNotLoopback){
+            log.info("use cluster host from address lookup: " + defaultAddressNotLoopback);
+            options.setClusterHost(defaultAddressNotLoopback);
+        } else if(null != loopbackAddress) {
+            log.info("use loopback as cluster host: " + loopbackAddress);
+            options.setClusterHost(loopbackAddress.getHostAddress());
+        } else {
+            throw new IllegalStateException("no address found for cluster host");
         }
 
         Vertx.clusteredVertx(options, res -> {
@@ -78,7 +97,45 @@ public class ClusterWatchdogRunner {
         });
     }
 
-    public static Config getClusterConfig(JsonObject conf) {
+
+    private static String getDefaultAddressNotLoopback() {
+        Enumeration<NetworkInterface> nets;
+        try {
+            nets = NetworkInterface.getNetworkInterfaces();
+        } catch (SocketException e) {
+            log.error("could not get the network interfaces " + e.getMessage());
+            return null;
+        }
+
+        NetworkInterface netinf;
+        List<InetAddress> usableInetAdresses = new ArrayList<>();
+        while (nets.hasMoreElements()) {
+            netinf = nets.nextElement();
+
+            Enumeration<InetAddress> addresses = netinf.getInetAddresses();
+
+            while (addresses.hasMoreElements()) {
+                InetAddress address = addresses.nextElement();
+                log.info("found InetAddress: " + address.toString() + " on interface: " + netinf.getName());
+                if (!address.isAnyLocalAddress() && !address.isMulticastAddress()
+                        && !(address instanceof Inet6Address) &&!address.isLoopbackAddress()) {
+                    usableInetAdresses.add(address);
+                }
+            }
+        }
+
+        if(usableInetAdresses.size() > 1) {
+            throw new IllegalStateException("don't know which InetAddress to use, there are more than one: " + usableInetAdresses);
+        } else if(usableInetAdresses.size() == 1) {
+            log.info("found a InetAddress which we can use as default address: " + usableInetAdresses.get(0).toString());
+            return usableInetAdresses.get(0).getHostAddress();
+        }
+
+        log.info("found no usable inet address");
+        return null;
+    }
+
+    private static Config getClusterConfig(JsonObject conf) {
 
         Config config = new Config();
         config.setProperty("hazelcast.logging.type", "slf4j");
