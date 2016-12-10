@@ -1,3 +1,4 @@
 {
-  "http.port":7879
+  "http.port":7878,
+  "intervalInSec": 10
 }
