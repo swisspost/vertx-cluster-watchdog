@@ -1,9 +1,7 @@
 target/
-build/
 mods/
 .project
 .classpath
-/.gradle
 /dogs
 .settings
 /bin
