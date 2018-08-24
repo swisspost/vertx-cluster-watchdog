@@ -11,8 +11,8 @@ How to run the watchdog
 You can run the watchdog standalone to try different cluster settings or deploy it into an existing vertx instance.
 
 1. Standalone:
-   build the fatjar with `gradle shadowJar` 
-   run the jar with `java -jar build/libs/cluster-watchdog-x.x.x-SNAPSHOT-all.jar`
+   build the fatjar with `mvn install -PshadowJar` 
+   run the jar with `java -jar target/cluster-watchdog-x.x.x-SNAPSHOT-all.jar`
    You can pass configuration to the fatjar with `-conf conf.json`, check the configuration section for the possible params 
 2. Existing instance:
    Deploy the module as every other module
@@ -64,14 +64,3 @@ Tests
 
 The tests try to simulate the cluster with multiple instances of the verticle. The amount of cluster members is injected over the config.
 
-Use gradle with alternative repositories
-----------------------------------------
-
-As standard the default maven repositories are set.
-You can overwrite these repositories by setting these properties (`-Pproperty=value`):
-
-* `repository` this is the repository where resources are fetched
-* `uploadRepository` the repository used in `uploadArchives`
-* `repoUsername` the username for uploading archives
-* `repoPassword` the password for uploading archives
-    
