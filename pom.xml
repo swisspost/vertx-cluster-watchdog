@@ -4,7 +4,7 @@
     <groupId>org.swisspush</groupId>
     <artifactId>cluster-watchdog</artifactId>
     <version>2.1.1-SNAPSHOT</version>
-    <name>gateleen</name>
+    <name>cluster-watchdog</name>
     <packaging>jar</packaging>
     <description>
         Checks if all your hazelcast cluster members are receiveing published messages over the bus.
