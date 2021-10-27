@@ -24,7 +24,7 @@ public class TwoClusterMembersOneVerticleInstancesTests {
     // with this number we simulate the different member count of a cluster
     private final static int SIMULATED_CLUSTER_MEMBERS = 1;
     private Vertx vertx;
-    private Logger log = LoggerFactory.getLogger(TwoClusterMembersOneVerticleInstancesTests.class);;
+    private Logger log = LoggerFactory.getLogger(TwoClusterMembersOneVerticleInstancesTests.class);
     private List<String> answers = new ArrayList<>();
 
     @Before
@@ -37,9 +37,8 @@ public class TwoClusterMembersOneVerticleInstancesTests {
         config.put("intervalInSec", 0);
         config.put("clusterMemberCount", 2);
 
-        vertx.deployVerticle(moduleName, new DeploymentOptions().setConfig(config).setInstances(SIMULATED_CLUSTER_MEMBERS), event -> {
-            log.info("success of deployment of  module " + moduleName + ": " + event.result());
-        });
+        vertx.deployVerticle(moduleName, new DeploymentOptions().setConfig(config).setInstances(SIMULATED_CLUSTER_MEMBERS), event ->
+                log.info("success of deployment of  module " + moduleName + ": " + event.result()));
     }
 
     @After
