@@ -62,5 +62,5 @@ Configuration
 Tests
 -----
 
-The tests try to simulate the cluster with multiple instances of the verticle. The amount of cluster members is injected over the config.
+The tests try to simulate the cluster with multiple instances of the verticle. The amount of cluster members is injected over the config. 
 
