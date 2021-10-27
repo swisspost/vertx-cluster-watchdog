@@ -34,12 +34,10 @@ public class NoClusterMembersOneVerticleInstancesTests {
     @Before
     public void before() {
         vertx = Vertx.vertx();
-        vertx.eventBus().consumer("clusterhealthcheck", new Handler<Message<JsonObject>>() {
-            public void handle(Message<JsonObject> event) {
-                final JsonObject body = event.body();
-                answers.add(body.getString("responseAddress"));
-                log.info("got message in test: " + body.toString());
-            }
+        vertx.eventBus().consumer("clusterhealthcheck", (Handler<Message<JsonObject>>) event -> {
+            final JsonObject body = event.body();
+            answers.add(body.getString("responseAddress"));
+            log.info("got message in test: " + body.toString());
         });
 
         JsonObject config = new JsonObject();
@@ -48,9 +46,8 @@ public class NoClusterMembersOneVerticleInstancesTests {
 
         final String moduleName = "org.swisspush.vertx.cluster.ClusterWatchdog";
 
-        vertx.deployVerticle(moduleName, new DeploymentOptions().setConfig(config).setInstances(SIMULATED_CLUSTER_MEMBERS), event -> {
-            log.info("success of deployment of module " + moduleName + ": " + event.result());
-        });
+        vertx.deployVerticle(moduleName, new DeploymentOptions().setConfig(config).setInstances(SIMULATED_CLUSTER_MEMBERS), event ->
+                log.info("success of deployment of module " + moduleName + ": " + event.result()));
     }
 
     @After

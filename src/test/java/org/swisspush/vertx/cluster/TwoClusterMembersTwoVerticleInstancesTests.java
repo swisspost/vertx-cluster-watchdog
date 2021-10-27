@@ -26,19 +26,17 @@ public class TwoClusterMembersTwoVerticleInstancesTests {
     // with this number we simulate the different member count of a cluster
     private final static int SIMULATED_CLUSTER_MEMBERS = 2;
     private Vertx vertx;
-    private Logger log = LoggerFactory.getLogger(TwoClusterMembersTwoVerticleInstancesTests.class);;
+    private Logger log = LoggerFactory.getLogger(TwoClusterMembersTwoVerticleInstancesTests.class);
     private List<String> answers = new ArrayList<>();
 
     @Before
     public void before() {
         vertx = Vertx.vertx();
 
-        vertx.eventBus().consumer("clusterhealthcheck", new Handler<Message<JsonObject>>() {
-            public void handle(Message<JsonObject> event) {
-                final JsonObject body = event.body();
-                answers.add(body.getString("responseAddress"));
-                log.info("got message in test: " + body.toString());
-            }
+        vertx.eventBus().consumer("clusterhealthcheck", (Handler<Message<JsonObject>>) event -> {
+            final JsonObject body = event.body();
+            answers.add(body.getString("responseAddress"));
+            log.info("got message in test: " + body.toString());
         });
 
         final String moduleName = "org.swisspush.vertx.cluster.ClusterWatchdog";
@@ -47,9 +45,8 @@ public class TwoClusterMembersTwoVerticleInstancesTests {
         config.put("intervalInSec", 0);
         config.put("clusterMemberCount", 2);
 
-        vertx.deployVerticle(moduleName, new DeploymentOptions().setConfig(config).setInstances(SIMULATED_CLUSTER_MEMBERS), event -> {
-            log.info("success of deployment of  module " + moduleName + ": " + event.result());
-        });
+        vertx.deployVerticle(moduleName, new DeploymentOptions().setConfig(config).setInstances(SIMULATED_CLUSTER_MEMBERS), event ->
+                log.info("success of deployment of  module " + moduleName + ": " + event.result()));
     }
 
     @After

@@ -42,8 +42,9 @@ public class ClusterWatchdogHttpHandler implements Handler<HttpServerRequest> {
         router.getWithRegex(".*clusterStatus").handler(ctx -> {
             ClusterHealthStatus status = ClusterHealthStatus.CONSISTENT;
             for(WatchdogResult watchdogResult : resultQueue) {
-                if(ClusterHealthStatus.INCONSISTENT.equals(watchdogResult.status)) {
+                if (ClusterHealthStatus.INCONSISTENT.equals(watchdogResult.status)) {
                     status = ClusterHealthStatus.INCONSISTENT;
+                    break;
                 }
             }
 

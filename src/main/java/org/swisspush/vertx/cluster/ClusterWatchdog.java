@@ -65,41 +65,32 @@ public class ClusterWatchdog extends AbstractVerticle {
         log.info("ClusterWatchdog started cluster check verticle: " + uniqueId);
 
         // the handler for the broadcast event, reads the sender from the event and reply to him
-        eb.consumer(BROADCAST, new Handler<Message<JsonObject>>() {
-            public void handle(Message<JsonObject> event) {
-                String responseAddress = event.body().getString(RESPONSE_ADDRESS_KEY);
-                String timestamp = event.body().getString("timestamp");
-                log.debug("got broadcast, i am: " + uniqueId + ", responseAddress is: " + responseAddress + " timestamp is: " + timestamp);
+        eb.consumer(BROADCAST, (Handler<Message<JsonObject>>) event -> {
+            String responseAddress = event.body().getString(RESPONSE_ADDRESS_KEY);
+            String timestamp = event.body().getString("timestamp");
+            log.debug("got broadcast, i am: " + uniqueId + ", responseAddress is: " + responseAddress + " timestamp is: " + timestamp);
 
-                // respond to the sender
-                JsonObject responsePayload = new JsonObject();
-                responsePayload.put("senderId", uniqueId);
-                responsePayload.put("timestamp", timestamp);
-                eb.send(responseAddress, responsePayload);
-            }
+            // respond to the sender
+            JsonObject responsePayload = new JsonObject();
+            responsePayload.put("senderId", uniqueId);
+            responsePayload.put("timestamp", timestamp);
+            eb.send(responseAddress, responsePayload);
         });
 
         // the handler for the reply of the broadcast handler, adds the result to the healthCheckResponses
-        eb.consumer(RESPONSE_ADDRESS_PREFIX + uniqueId, new Handler<Message<JsonObject>>() {
-            public void handle(Message<JsonObject> event) {
-                String senderId = event.body().getString("senderId");
-                String timestamp = event.body().getString("timestamp");
-                log.debug("ClusterWatchdog got response, i am: " + uniqueId + ", senderId is: " + senderId);
-                if(healthCheckResponses.get(timestamp) == null) {
-                    healthCheckResponses.put(timestamp, new ArrayList<>());
-                }
-                JsonObject response = new JsonObject();
-                response.put("senderId", senderId);
-                healthCheckResponses.get(timestamp).add(response);
-            }
+        eb.consumer(RESPONSE_ADDRESS_PREFIX + uniqueId, (Handler<Message<JsonObject>>) event -> {
+            String senderId = event.body().getString("senderId");
+            String timestamp = event.body().getString("timestamp");
+            log.debug("ClusterWatchdog got response, i am: " + uniqueId + ", senderId is: " + senderId);
+            healthCheckResponses.computeIfAbsent(timestamp, k -> new ArrayList<>());
+            JsonObject response = new JsonObject();
+            response.put("senderId", senderId);
+            healthCheckResponses.get(timestamp).add(response);
         });
 
         // the handler to add the result from the other members
-        eb.consumer(RESULT_ADDRESS_PREFIX + uniqueId, new Handler<Message<JsonObject>>() {
-            public void handle(Message<JsonObject> watchdogResultJsonObj) {
-                clusterWatchdogHttpHandler.resultQueue.add(WatchdogResult.fromJson(watchdogResultJsonObj.body()));
-            }
-        });
+        eb.consumer(RESULT_ADDRESS_PREFIX + uniqueId, (Handler<Message<JsonObject>>) watchdogResultJsonObj ->
+                clusterWatchdogHttpHandler.resultQueue.add(WatchdogResult.fromJson(watchdogResultJsonObj.body())));
 
         if(intervalInMillis == 0) {
             // wait until all verticles are up and running
@@ -130,10 +121,9 @@ public class ClusterWatchdog extends AbstractVerticle {
             testpayload.put("timestamp", timestamp);
 
             // if the cluster
-            if(! useInjectedClusterMembersCount) {
-                ClusterInformation clusterInformation = new ClusterInformation();
+            if(!useInjectedClusterMembersCount) {
                 try {
-                    clusterMemberCount = clusterInformation.getMembers(log).size();
+                    clusterMemberCount = ClusterInformation.getMembers(log).size();
                 } catch (MoreThanOneHazelcastInstanceException e) {
                     log.error("ClusterWatchdog got more than one hazelcast instance, we can only handle one hazelcast instance, we abort");
                     return;

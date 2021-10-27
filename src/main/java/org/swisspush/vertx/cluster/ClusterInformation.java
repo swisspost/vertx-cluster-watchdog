@@ -17,7 +17,7 @@ public class ClusterInformation {
 
         // get the hazelcast instances
         Set<HazelcastInstance> allHazelcastInstances = Hazelcast.getAllHazelcastInstances();
-        if(allHazelcastInstances == null || allHazelcastInstances.size() == 0) {
+        if(allHazelcastInstances.isEmpty()) {
             log.error("ClusterWatchdog no hazelcast instances found");
             return new HashSet<>();
         }
