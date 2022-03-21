@@ -1,13 +1,13 @@
 package org.swisspush.vertx.cluster;
 
 import io.vertx.core.AbstractVerticle;
-import io.vertx.core.Future;
 import io.vertx.core.Handler;
+import io.vertx.core.Promise;
 import io.vertx.core.eventbus.EventBus;
 import io.vertx.core.eventbus.Message;
 import io.vertx.core.json.JsonObject;
-import io.vertx.core.logging.Logger;
-import io.vertx.core.logging.LoggerFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.text.SimpleDateFormat;
 import java.util.*;
@@ -33,7 +33,7 @@ public class ClusterWatchdog extends AbstractVerticle {
     private ClusterWatchdogHttpHandler clusterWatchdogHttpHandler;
 
     @Override
-    public void start(Future<Void> fut) {
+    public void start(Promise<Void> startPromise) {
 
         eb = vertx.eventBus();
         JsonObject config = config();
@@ -104,9 +104,9 @@ public class ClusterWatchdog extends AbstractVerticle {
 
         vertx.createHttpServer().requestHandler(clusterWatchdogHttpHandler).listen(httport, result -> {
             if(result.succeeded()){
-                fut.complete();
+                startPromise.complete();
             } else {
-                fut.fail(result.cause());
+                startPromise.fail(result.cause());
             }
         });
     }

@@ -1,16 +1,19 @@
 package org.swisspush.vertx.cluster;
 
-import com.hazelcast.config.*;
+import com.hazelcast.config.Config;
+import com.hazelcast.config.JoinConfig;
+import com.hazelcast.config.MulticastConfig;
+import com.hazelcast.config.NetworkConfig;
 import io.vertx.core.DeploymentOptions;
 import io.vertx.core.Vertx;
 import io.vertx.core.VertxOptions;
 import io.vertx.core.impl.Args;
 import io.vertx.core.json.DecodeException;
 import io.vertx.core.json.JsonObject;
-import io.vertx.core.logging.Logger;
-import io.vertx.core.logging.LoggerFactory;
 import io.vertx.core.spi.cluster.ClusterManager;
 import io.vertx.spi.cluster.hazelcast.HazelcastClusterManager;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -18,7 +21,10 @@ import java.net.Inet6Address;
 import java.net.InetAddress;
 import java.net.NetworkInterface;
 import java.net.SocketException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Enumeration;
+import java.util.List;
+import java.util.Scanner;
 
 /**
  * Created by florian kammermann on 18.05.2016.
@@ -69,13 +75,13 @@ public class ClusterWatchdogRunner {
         InetAddress loopbackAddress = InetAddress.getLoopbackAddress();
         if(null != conf.getString("cluster.host")) {
             log.info("use cluster host from config: " + conf.getString("cluster.host"));
-            options.setClusterHost(conf.getString("cluster.host"));
+            options.getEventBusOptions().setHost(conf.getString("cluster.host"));
         } else if(null != defaultAddressNotLoopback){
             log.info("use cluster host from address lookup: " + defaultAddressNotLoopback);
-            options.setClusterHost(defaultAddressNotLoopback);
+            options.getEventBusOptions().setHost(defaultAddressNotLoopback);
         } else if(null != loopbackAddress) {
             log.info("use loopback as cluster host: " + loopbackAddress);
-            options.setClusterHost(loopbackAddress.getHostAddress());
+            options.getEventBusOptions().setHost(loopbackAddress.getHostAddress());
         } else {
             throw new IllegalStateException("no address found for cluster host");
         }
@@ -139,16 +145,11 @@ public class ClusterWatchdogRunner {
 
         Config config = new Config();
         config.setProperty("hazelcast.logging.type", "slf4j");
-        if(conf.getString("hazelcast.group.name") != null || conf.getString("hazelcast.group.password") != null) {
-            GroupConfig groupConfig = new GroupConfig();
-            if(conf.getString("hazelcast.group.name") != null) {
-                groupConfig.setName(conf.getString("hazelcast.group.name"));
-            }
-            if(conf.getString("hazelcast.group.password") != null) {
-                groupConfig.setPassword(conf.getString("hazelcast.group.password"));
-            }
-            config.setGroupConfig(groupConfig);
+
+        if(conf.getString("hazelcast.group.name") != null) {
+            config.setClusterName(conf.getString("hazelcast.group.name"));
         }
+
         NetworkConfig netConfig = new NetworkConfig();
         if(conf.getString("hazelcast.net.port") != null) {
             netConfig.setPort(conf.getInteger("hazelcast.net.port"));
