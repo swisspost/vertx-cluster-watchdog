@@ -2,8 +2,8 @@ package org.swisspush.vertx.cluster;
 
 import com.hazelcast.core.Hazelcast;
 import com.hazelcast.core.HazelcastInstance;
-import com.hazelcast.core.Member;
-import io.vertx.core.logging.Logger;
+import com.hazelcast.cluster.Member;
+import org.slf4j.Logger;
 
 import java.util.HashSet;
 import java.util.Set;

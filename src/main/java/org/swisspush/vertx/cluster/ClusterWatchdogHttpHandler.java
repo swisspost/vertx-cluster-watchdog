@@ -7,7 +7,7 @@ import io.vertx.core.http.HttpServerRequest;
 import io.vertx.ext.web.Router;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
-import io.vertx.core.logging.Logger;
+import org.slf4j.Logger;
 import org.apache.commons.lang.ArrayUtils;
 
 public class ClusterWatchdogHttpHandler implements Handler<HttpServerRequest> {
@@ -68,6 +68,6 @@ public class ClusterWatchdogHttpHandler implements Handler<HttpServerRequest> {
 
     @Override
     public void handle(HttpServerRequest request) {
-        router.accept(request);
+        router.handle(request);
     }
 }

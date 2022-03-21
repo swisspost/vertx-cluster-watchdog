@@ -1,14 +1,17 @@
 package org.swisspush.vertx.cluster;
 
+import io.vertx.core.AsyncResult;
 import io.vertx.core.DeploymentOptions;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 import io.vertx.core.eventbus.Message;
 import io.vertx.core.http.HttpClient;
 import io.vertx.core.http.HttpClientOptions;
+import io.vertx.core.http.HttpClientResponse;
+import io.vertx.core.http.HttpMethod;
 import io.vertx.core.json.JsonObject;
-import io.vertx.core.logging.Logger;
-import io.vertx.core.logging.LoggerFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
@@ -63,11 +66,16 @@ public class NoClusterMembersOneVerticleInstancesTests {
         Async async = testContext.async();
         vertx.setTimer(5000, event -> {
             HttpClient httpClient = vertx.createHttpClient(new HttpClientOptions().setDefaultHost("localhost").setDefaultPort(7878));
-            httpClient.getNow("/clusterStatus", httpClientResponse -> {
-                log.info("response status message: " + httpClientResponse.statusMessage());
-                testContext.assertEquals(ClusterHealthStatus.NO_RESULT.toString(), httpClientResponse.statusMessage());
-                httpClient.close();
-                async.complete();
+            httpClient.request(HttpMethod.GET, "/clusterStatus", httpClientReq -> {
+                httpClientReq.result().send().onComplete(new Handler<AsyncResult<HttpClientResponse>>() {
+                    @Override
+                    public void handle(AsyncResult<HttpClientResponse> event) {
+                        log.info("response status message: " + event.result().statusMessage());
+                        testContext.assertEquals(ClusterHealthStatus.NO_RESULT.toString(), event.result().statusMessage());
+                        httpClient.close();
+                        async.complete();
+                    }
+                });
             });
         });
     }
