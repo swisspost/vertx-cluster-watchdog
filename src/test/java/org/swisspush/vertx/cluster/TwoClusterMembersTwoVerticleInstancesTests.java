@@ -6,9 +6,8 @@ import io.vertx.core.Vertx;
 import io.vertx.core.eventbus.Message;
 import io.vertx.core.http.HttpClient;
 import io.vertx.core.http.HttpClientOptions;
+import io.vertx.core.http.HttpMethod;
 import io.vertx.core.json.JsonObject;
-import io.vertx.core.logging.Logger;
-import io.vertx.core.logging.LoggerFactory;
 import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
@@ -16,6 +15,8 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -62,15 +63,19 @@ public class TwoClusterMembersTwoVerticleInstancesTests {
         Async async = testContext.async();
         vertx.setTimer(5000, event -> {
             HttpClient httpClient = vertx.createHttpClient(new HttpClientOptions().setDefaultHost("localhost").setDefaultPort(7878));
-            httpClient.getNow("/clusterWatchdogStats", httpClientResponse -> httpClientResponse.bodyHandler(buffer -> {
-                log.info("cluster watchdog stats:\n" + buffer.toString());
-                httpClient.getNow("/clusterStatus", httpClientResponse1 -> {
-                    log.info("response status message: " + httpClientResponse1.statusMessage());
-                    testContext.assertEquals(ClusterHealthStatus.CONSISTENT.toString(), httpClientResponse1.statusMessage());
-                    async.complete();
-                });
+            httpClient.request(HttpMethod.GET, "/clusterWatchdogStats", httpClientReq -> {
+                httpClientReq.result().send().onComplete(event1 -> event1.result().bodyHandler(body -> {
+                    log.info("cluster watchdog stats:\n" + body.toString());
+                    httpClient.request(HttpMethod.GET, "/clusterStatus", httpClientReq2 -> {
+                        httpClientReq2.result().send().onComplete(event2 -> {
+                            log.info("response status message: " + event2.result().statusMessage());
+                            testContext.assertEquals(ClusterHealthStatus.CONSISTENT.toString(), event2.result().statusMessage());
+                            async.complete();
+                        });
+                    });
+                }));
+            });
 
-            }));
         });
     }
 }
