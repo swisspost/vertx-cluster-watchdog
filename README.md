@@ -2,7 +2,7 @@ vertx-cluster-watchdog
 ======================
 
 [![Build Status](https://travis-ci.com/swisspush/vertx-cluster-watchdog.svg?branch=master)](https://travis-ci.com/swisspush/vertx-cluster-watchdog)
-[![codecov](https://codecov.io/gh/swisspush/vertx-cluster-watchdog/branch/master/graph/badge.svg)](https://codecov.io/gh/swisspush/vertx-cluster-watchdog)
+[![codecov](https://codecov.io/gh/swisspost/vertx-cluster-watchdog/branch/master/graph/badge.svg?token=nbrYxHDMmJ)](https://codecov.io/gh/swisspost/vertx-cluster-watchdog)
 
 Checks if all your hazelcast cluster members are receiveing published messages over the bus.
 
