@@ -2,7 +2,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>org.swisspush</groupId>
     <artifactId>cluster-watchdog</artifactId>
-    <version>3.0.3-SNAPSHOT</version>
+    <version>3.1.0-SNAPSHOT</version>
     <name>cluster-watchdog</name>
     <packaging>jar</packaging>
     <description>
@@ -54,19 +54,19 @@
         <dependency>
             <groupId>commons-io</groupId>
             <artifactId>commons-io</artifactId>
-            <version>2.4</version>
+            <version>${commons-io.version}</version>
             <scope>compile</scope>
         </dependency>
         <dependency>
             <groupId>commons-lang</groupId>
             <artifactId>commons-lang</artifactId>
-            <version>2.4</version>
+            <version>${commons-lang.version}</version>
             <scope>compile</scope>
         </dependency>
         <dependency>
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-collections4</artifactId>
-            <version>4.1</version>
+            <version>${commons-collections4.version}</version>
             <scope>compile</scope>
         </dependency>
         <dependency>
@@ -83,7 +83,7 @@
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
-            <version>4.13.2</version>
+            <version>${junit.version}</version>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -397,8 +397,12 @@
         </profile>
     </profiles>
     <properties>
-        <vertx.version>4.2.1</vertx.version>
-        <slf4j.version>1.7.36</slf4j.version>
+        <vertx.version>4.5.1</vertx.version>
+        <slf4j.version>2.0.10</slf4j.version>
+        <commons-lang.version>2.6</commons-lang.version>
+        <commons-io.version>2.15.1</commons-io.version>
+        <commons-collections4.version>4.4</commons-collections4.version>
+        <junit.version>4.13.2</junit.version>
         <project.build.sourceEncoding>UTF8</project.build.sourceEncoding>
         <sonatypeOssDistMgmtSnapshotsUrl>
             https://oss.sonatype.org/content/repositories/snapshots/
