@@ -397,7 +397,7 @@
         </profile>
     </profiles>
     <properties>
-        <vertx.version>4.5.1</vertx.version>
+        <vertx.version>4.5.2</vertx.version>
         <slf4j.version>2.0.10</slf4j.version>
         <commons-lang.version>2.6</commons-lang.version>
         <commons-io.version>2.15.1</commons-io.version>
