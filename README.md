@@ -4,7 +4,7 @@ vertx-cluster-watchdog
 [![Build Status](https://travis-ci.com/swisspush/vertx-cluster-watchdog.svg?branch=master)](https://travis-ci.com/swisspush/vertx-cluster-watchdog)
 [![codecov](https://codecov.io/gh/swisspost/vertx-cluster-watchdog/branch/master/graph/badge.svg?token=nbrYxHDMmJ)](https://codecov.io/gh/swisspost/vertx-cluster-watchdog)
 
-Checks if all your hazelcast cluster members are receiveing published messages over the bus.
+Checks if all your hazelcast cluster members are receiving published messages over the bus.
 
 How to run the watchdog
 -----------------------
@@ -63,3 +63,22 @@ Tests
 -----
 
 The tests try to simulate the cluster with multiple instances of the verticle. The amount of cluster members is injected over the config. 
+
+Micrometer metrics
+------------------
+When enabled, `vertx-cluster-watchdog` is monitored with micrometer. The following metrics are available:
+* cluster_watchdog_members
+* cluster_watchdog_members_responded
+
+Example metrics:
+
+```
+# HELP cluster_watchdog_members Amount of members visible to the cluster
+# TYPE cluster_watchdog_members gauge
+cluster_watchdog_members 2.0
+# HELP cluster_watchdog_members_responded Amount of cluster members responded when accessed
+# TYPE cluster_watchdog_members_responded gauge
+cluster_watchdog_members_responded 2.0
+```
+
+To enable the metrics, set a `MeterRegistry` instance by calling `setMeterRegistry(MeterRegistry meterRegistry)` method in `ClusterWatchdog` class.

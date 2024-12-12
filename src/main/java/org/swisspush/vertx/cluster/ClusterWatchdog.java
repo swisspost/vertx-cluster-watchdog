@@ -1,5 +1,7 @@
 package org.swisspush.vertx.cluster;
 
+import io.micrometer.core.instrument.Gauge;
+import io.micrometer.core.instrument.MeterRegistry;
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.Handler;
 import io.vertx.core.Promise;
@@ -11,6 +13,7 @@ import org.slf4j.LoggerFactory;
 
 import java.text.SimpleDateFormat;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicLong;
 
 public class ClusterWatchdog extends AbstractVerticle {
 
@@ -32,6 +35,9 @@ public class ClusterWatchdog extends AbstractVerticle {
     private Map<String,List<JsonObject>> healthCheckResponses;
     private ClusterWatchdogHttpHandler clusterWatchdogHttpHandler;
 
+    private final AtomicLong atomicClusterMemberCountRequired = new AtomicLong(0);
+    private final AtomicLong atomicClusterMemberRespondersCount = new AtomicLong(0);
+
     @Override
     public void start(Promise<Void> startPromise) {
 
@@ -50,6 +56,7 @@ public class ClusterWatchdog extends AbstractVerticle {
         } else {
             clusterMemberCount = clusterMemberCountFromConfig;
         }
+        atomicClusterMemberRespondersCount.set(0);
 
         int resultQueueLength = config.getInteger("resultQueueLength", 100);
         log.info("ClusterWatchdog used resultQueueLength: " + resultQueueLength);
@@ -111,6 +118,15 @@ public class ClusterWatchdog extends AbstractVerticle {
         });
     }
 
+    public void setMeterRegistry(MeterRegistry meterRegistry) {
+        if(meterRegistry != null) {
+            Gauge.builder("cluster.watchdog.members", atomicClusterMemberCountRequired, AtomicLong::get)
+                    .description("Amount of members visible to the cluster").register(meterRegistry);
+            Gauge.builder("cluster.watchdog.members.responded", atomicClusterMemberRespondersCount, AtomicLong::get)
+                    .description("Amount of cluster members responded when accessed").register(meterRegistry);
+        }
+    }
+
     class ClusterCheckHandler implements Handler<Long> {
 
         public void handle(Long event) {
@@ -135,6 +151,8 @@ public class ClusterWatchdog extends AbstractVerticle {
                 return;
             }
 
+            atomicClusterMemberCountRequired.set(clusterMemberCount);
+
             // publish the broadcast event which will us get the response of all the registered handlers
             eb.publish(BROADCAST, testpayload);
 
@@ -148,6 +166,9 @@ public class ClusterWatchdog extends AbstractVerticle {
                 watchdogResult.time = time;
                 watchdogResult.verticleId = uniqueId;
                 watchdogResult.clusterMemberCount = clusterMemberCount;
+
+                atomicClusterMemberRespondersCount.set(responses != null ? responses.size() : 0);
+
                 if(responses == null) {
                     log.error("ClusterWatchdog found no responses for timestamp: " + timestamp);
                     watchdogResult.status = ClusterHealthStatus.INCONSISTENT;
